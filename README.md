@@ -1,5 +1,7 @@
 # MyQtDemos2018
-Some Qt Demos 
+This project contains some Qt demos, which show some Qt class usage and coding tips.
+
+The details of these demos are in [Note.txt](Note.txt).
 
 **Requests and Bug reports**
 
@@ -8,6 +10,4 @@ Some Qt Demos
 **Git the source**
 
 - [Git and GitHub](https://github.com/zcatt/MyQtDemos2018)
-
-
 
