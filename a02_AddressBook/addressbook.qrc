@@ -1,0 +1,8 @@
+<RCC>
+    <qresource>
+    <file>images/emotion1.png</file>
+    <file>images/emotion2.png</file>
+    <file>images/emotion3.png</file>
+    <file>images/emotion4.png</file>
+    </qresource>
+</RCC>

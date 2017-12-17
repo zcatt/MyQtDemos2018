@@ -42,7 +42,7 @@ void CResource::LoadResource(void)
     QPixmap pm;
 
     bOK = pm.load(QLatin1String(MineIconsRsc));
-    qDebug()<< (bOK?"Mine icons loaded ok.":"Mine icons loaded fail.")<<endl;
+    qDebug()<< (bOK?"Mine icons loaded ok.":"Mine icons loaded fail.");
 
 
     int i;
@@ -53,7 +53,7 @@ void CResource::LoadResource(void)
 
 
     bOK = pm.load(QLatin1String(EmotionsRsc));
-    qDebug()<< (bOK?"Emotions loaded ok.":"Emotions loaded fail.")<<endl;
+    qDebug()<< (bOK?"Emotions loaded ok.":"Emotions loaded fail.");
 
     for(i = 0; i<EmotionNum; i++)
         m_Emotions[i] = new QPixmap(pm.copy(0, i*EmotionHeight, EmotionWidth, EmotionHeight));
@@ -61,7 +61,7 @@ void CResource::LoadResource(void)
 
 
     bOK = pm.load(QLatin1String(DigitsRsc));
-    qDebug()<< (bOK?"Digits loaded ok.":"Digits loaded fail.")<<endl;
+    qDebug()<< (bOK?"Digits loaded ok.":"Digits loaded fail.");
 
     for(i = 0; i<DigitNum; i++)
         m_Digits[i] = new QPixmap(pm.copy(0, i*DigitHeight, DigitWidth, DigitHeight));

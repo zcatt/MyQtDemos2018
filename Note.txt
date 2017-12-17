@@ -22,6 +22,7 @@
 DemoName                          Note
 =================================================================
 .a01_MyToolBox,             CToolBox, 类似QToolBox的widget.
+.a02_AddressBook,           address book. 2 views use 1 common model. implement model, 排序; 图像的居中显示
 .a03_MineSweeper            扫雷游戏
 
 
