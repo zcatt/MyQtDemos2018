@@ -23,7 +23,9 @@ DemoName                          Note
 =================================================================
 .a01_MyToolBox,             CToolBox, 类似QToolBox的widget.
 .a02_AddressBook,           address book. 2 views use 1 common model. implement model, 排序; 图像的居中显示
-.a03_MineSweeper            扫雷游戏
+.a03_MineSweeper,           扫雷游戏
+.a04_EditorFactory,         设置全局默认的QItemEditorFactory,和针对指定column的QItemEditorFactory
+                            以及内存泄露的检测(_CrtSetDbgFlag)
 
 
 

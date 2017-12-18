@@ -1,6 +1,9 @@
 # Qt project user config
 *.pro.user
 
+#visual studio
+.vs
+
 # Prerequisites
 *.d
 
