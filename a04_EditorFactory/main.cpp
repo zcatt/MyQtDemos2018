@@ -12,7 +12,13 @@
         会生成文件XXX.vcxproj
 
    tech:
+
+   .editor class should define the editted property by 'USER', such as
+            Q_PROPERTY(QColor color READ color WRITE setColor USER true)
+    so QItemEditorFactory can find which the editor can process.
+
    .QItemEditorFactory.setDefaultFactory()设置的是全局使用的editorFactory
+
    .QStyledItemDelegate::setItemEditorFactory()设置的是local editorFactory。
 
 
