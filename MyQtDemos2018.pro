@@ -5,7 +5,8 @@ SUBDIRS += \
     a03_MineSweeper \
     a02_AddressBook \
     a04_EditorFactory \
-    a05_HaloText
+    a05_HaloText \
+    a06_ExtensionDialog
 
 OTHER_FILES += \
     Note.txt \

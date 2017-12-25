@@ -27,6 +27,9 @@ DemoName                          Note
 .a04_EditorFactory,         设置全局默认的QItemEditorFactory,和针对指定column的QItemEditorFactory
                             以及内存泄露的检测(_CrtSetDbgFlag)
 .a05_HaloText,              镶边文字图案. 使用QPaintPath，和QPainterPathStroker.
+.a06_ExtensionDialog        缩放的dialog, from the 'Extension' example in Qt SDK.
+*/
+
 
 
 
