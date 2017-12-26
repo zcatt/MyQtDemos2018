@@ -6,7 +6,8 @@ SUBDIRS += \
     a02_AddressBook \
     a04_EditorFactory \
     a05_HaloText \
-    a06_ExtensionDialog
+    a06_ExtensionDialog \
+    a07_BasicGraphicsShape
 
 OTHER_FILES += \
     Note.txt \
