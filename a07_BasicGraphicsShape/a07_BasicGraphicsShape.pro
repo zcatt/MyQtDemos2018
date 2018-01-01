@@ -27,12 +27,16 @@ SOURCES += \
         main.cpp \
         mainwindow.cpp \
     cdraftscene.cpp \
-    cshapeitem.cpp
+    cshapeitem.cpp \
+    cdraftview.cpp \
+    clinkitem.cpp
 
 HEADERS += \
         mainwindow.h \
     cdraftscene.h \
-    cshapeitem.h
+    cshapeitem.h \
+    cdraftview.h \
+    clinkitem.h
 
 RESOURCES += \
     basicgraphicsshape.qrc

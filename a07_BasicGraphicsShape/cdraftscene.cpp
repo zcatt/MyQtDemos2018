@@ -2,6 +2,7 @@
 
 #include "mainwindow.h"
 #include "cshapeitem.h"
+#include "clinkitem.h"
 
 #include "cdraftscene.h"
 
@@ -27,10 +28,17 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
         switch(m_nShapeMode)
         {
         case CShapeItem::ShapeType_Triangle:
+            {
+                CTriangleItem *triangle = new CTriangleItem();
+                addItem(triangle);
+                triangle->setPos(mouseEvent->scenePos());
+                emit itemInserted(triangle);
+            }
+            break;
         case CShapeItem::ShapeType_Circle:
         case CShapeItem::ShapeType_Rectangle:
-        case CShapeItem::ShapeType_Line:
-            m_pLine = new CLineItem;
+        case CShapeItem::ShapeType_Link:
+            m_pLine = new CLinkItem;
             m_pLine->setLine(QLineF(mouseEvent->scenePos(), mouseEvent->scenePos()));
             addItem(m_pLine);
             emit itemInserted(m_pLine);
@@ -49,21 +57,21 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 
 void CDraftScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    if (m_nShapeMode == CShapeItem::ShapeType_Line && m_pLine != 0)
+    if (m_nShapeMode == CShapeItem::ShapeType_Link && m_pLine != 0)
     {
         QLineF newLine(m_pLine->point(0), mouseEvent->scenePos());
         m_pLine->setLine(newLine);
     }
     else
     {
-        qDebug()<<"mouse move event";
+        //qDebug()<<"mouse move event, pos=" << mouseEvent->scenePos();
         QGraphicsScene::mouseMoveEvent(mouseEvent);
     }
 }
 
 void CDraftScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    if (m_nShapeMode == CShapeItem::ShapeType_Line && m_pLine != 0)
+    if (m_nShapeMode == CShapeItem::ShapeType_Link && m_pLine != 0)
     {
         m_pLine = 0;
     }

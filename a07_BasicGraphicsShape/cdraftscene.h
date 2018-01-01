@@ -6,7 +6,7 @@
 #include "mainwindow.h"
 
 class CShapeItem;
-class CLineItem;
+class CLinkItem;
 
 class CDraftScene : public QGraphicsScene
 {
@@ -15,8 +15,8 @@ public:
     CDraftScene(MainWindow *pMainWindow, QObject *parent = 0);
 
 signals:
-    void itemInserted(CShapeItem *item);
-    void itemSelected(CShapeItem *item);
+    void itemInserted(QGraphicsItem *item);
+    void itemSelected(QGraphicsItem *item);
 
 protected:
     void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent) override;
@@ -27,7 +27,7 @@ public:
     MainWindow *m_pMainWindow;
     int m_nShapeMode; //ShapeType
 
-    CLineItem *m_pLine;
+    CLinkItem *m_pLine;
 };
 
 #endif // CDRAFTSCENE_H

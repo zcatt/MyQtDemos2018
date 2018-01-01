@@ -9,6 +9,7 @@ class QListWidget;
 class QGraphicsView;
 class QGraphicsScene;
 class CDraftScene;
+class CDraftView;
 
 
 class MainWindow : public QMainWindow
@@ -24,6 +25,17 @@ public:
     int GetCurrentShapeType(void);
     void ResetShapeType(void);
 
+    void createMenuAndToolBar(void);
+
+public slots:
+    void zoomIn(void);
+    void zoomOut(void);
+    void deleteItem(void);
+    void bringToFront(void);
+    void sendToBack(void);
+    void about(void);
+
+
 public:
 
     QToolBox *m_pToolBox;
@@ -32,7 +44,7 @@ public:
     QListWidget *m_pShapes;
     QListWidget *m_pAnnotations;
 
-    QGraphicsView *m_pGView;
+    CDraftView *m_pGView;
     CDraftScene *m_pGScene;
 };
 
