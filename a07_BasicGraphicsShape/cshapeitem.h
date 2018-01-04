@@ -13,7 +13,8 @@ public:
         ShapeType_Link,
         ShapeType_Triangle,
         ShapeType_Circle,
-        ShapeType_Rectangle
+        ShapeType_Rectangle,
+        ShapeType_Text,
     };
 
     enum ShapeItemType
