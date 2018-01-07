@@ -8,7 +8,8 @@ SUBDIRS += \
     a05_HaloText \
     a06_ExtensionDialog \
     a07_BasicGraphicsShape \
-    a08_LineEdit
+    a08_LineEdit \
+    a09_PopupLineEdit
 
 OTHER_FILES += \
     Note.txt \

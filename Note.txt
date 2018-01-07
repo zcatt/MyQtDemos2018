@@ -30,7 +30,7 @@ DemoName                          Note
 .a06_ExtensionDialog        缩放的dialog, from the 'Extension' example in Qt SDK.
 .a07_BasicGraphicsShape     一些graphics shapes的tips
 .a08_LineEdit               QLineEdit的使用
-
+.a09_PopupLineEdit	    QLineEdit作为popup实现in-place edit.
 
 
 
