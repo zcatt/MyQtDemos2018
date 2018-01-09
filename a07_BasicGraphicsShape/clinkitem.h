@@ -32,6 +32,7 @@ public:
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) override;
 
 
+    enum{ Type = Type_Link};
     int type() const override;
 
 public:

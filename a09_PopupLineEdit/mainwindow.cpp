@@ -92,7 +92,12 @@ void MainWindow::popupLineEdit(void)
     if(name.isEmpty())
         return;
 
-
+#if 1
+    QGraphicsTextItem *textItem = new QGraphicsTextItem(name);
+    textItem->setParentItem(item);
+    textItem->setPos(item->boundingRect().center());
+#else
     QGraphicsTextItem *textItem = m_scene->addText(name);
     textItem->setPos(pos);
+#endif
 }

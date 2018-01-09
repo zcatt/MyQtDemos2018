@@ -126,6 +126,8 @@ void CDraftView::drawForeground(QPainter *painter, const QRectF &rectScene)
 
     foreach(QGraphicsItem* item, selectedItems)
     {
+        if(item->type() < C2DItem::Type_Shape)
+            continue;
         //QRectF rectBounding = item->boundingRect();
         //rectBounding = item->mapRectToScene(rectBounding);
         rectItemScene = item->sceneBoundingRect();
@@ -133,9 +135,8 @@ void CDraftView::drawForeground(QPainter *painter, const QRectF &rectScene)
         if(rectItemScene.intersects(rectScene))
         {
             CShapeItem *sitem;
-            sitem = qgraphicsitem_cast<CShapeItem*>(item);
-            if(sitem == 0)
-                continue;
+            sitem = static_cast<CShapeItem*>(item);
+            Q_ASSERT(sitem != 0);
 
             QRect rcBounding;
 #if 0
@@ -221,39 +222,37 @@ void CDraftView::mousePressEvent(QMouseEvent *event)
         // 2.鼠标位于selectedBoarder的8个handle block中
         QList<QGraphicsItem*> selectedItems;
         selectedItems = scene()->selectedItems();
-        if(selectedItems.count()==1)
+        if(selectedItems.count()==1 && selectedItems.first()->type() > C2DItem::Type_Shape)
         {
             CShapeItem *sitem;
-            sitem = qgraphicsitem_cast<CShapeItem*>(selectedItems.first());
-            if(sitem != 0)
+            sitem = static_cast<CShapeItem*>(selectedItems.first());
+
+            QRect rcBoundingView;
+            rcBoundingView = sitem->viewBoundingRect(this);
+
+            QPoint pt = event->pos();
+
+            int nPosCode;
+            nPosCode = posCode(pt, rcBoundingView);
+            if(nPosCode == CShapeItem::BHC_0)
             {
-                QRect rcBoundingView;
-                rcBoundingView = sitem->viewBoundingRect(this);
-
-                QPoint pt = event->pos();
-
-                int nPosCode;
-                nPosCode = posCode(pt, rcBoundingView);
-                if(nPosCode == CShapeItem::BHC_0)
-                {
-                    // go through
-                }
-                else
-                {       //处理拖动selectedBorder handles改变item大小
-                    sitem->grabMouse();
-                    //mark
-                    sitem->setTrackBorder(true, nPosCode, mapToScene(pt));
-#if 1
-                    m_bSetBorderCursor = true;
-                    //sitem->setBorderCursor(nPosCode);
-                    setCursor(sitem->borderCursor(nPosCode));
-#else
-                    sitem->setBorderCursor(nPosCode);
-#endif
-                    return; //pass QGraphicsView::mousePressEvent()
-                }
-
+                // go through
             }
+            else
+            {       //处理拖动selectedBorder handles改变item大小
+                sitem->grabMouse();
+                //mark
+                sitem->setTrackBorder(true, nPosCode, mapToScene(pt));
+#if 1
+                m_bSetBorderCursor = true;
+                //sitem->setBorderCursor(nPosCode);
+                setCursor(sitem->borderCursor(nPosCode));
+#else
+                sitem->setBorderCursor(nPosCode);
+#endif
+                return; //pass QGraphicsView::mousePressEvent()
+            }
+
         }       //if(selectedItems.count()==1)
 
     }   // if (event->button() == Qt::LeftButton)
@@ -272,50 +271,46 @@ void CDraftView::mouseMoveEvent(QMouseEvent *event)
     // 2.鼠标位于selectedBoarder的8个handle block中
     QList<QGraphicsItem*> selectedItems;
     selectedItems = scene()->selectedItems();
-    if(selectedItems.count()==1)
+    if(selectedItems.count()==1 && selectedItems.first()->type() > C2DItem::Type_Shape)
     {
         CShapeItem *sitem;
-        sitem = qgraphicsitem_cast<CShapeItem*>(selectedItems.first());
-        if(sitem != 0)
+        sitem = static_cast<CShapeItem*>(selectedItems.first());
+        //仅在没有mousePress时设置cursor
+        if(sitem->m_bTrackBorder)
         {
-            //仅在没有mousePress时设置cursor
-            if(sitem->m_bTrackBorder)
+            //拖动selectedBorder中
+            sitem->trackBorder(mapToScene(event->pos()));
+            return; //pass QGraphicsView::mousePressEvent()
+        }
+        else
+        {
+            //非拖动中
+            QRect rcBoundingView;
+            rcBoundingView = sitem->viewBoundingRect(this);
+
+            QPoint pt = event->pos();
+
+            int nPosCode;
+            nPosCode = posCode(pt, rcBoundingView);
+            if(nPosCode == CShapeItem::BHC_0)
             {
-                //拖动selectedBorder中
-                sitem->trackBorder(mapToScene(event->pos()));
-                return; //pass QGraphicsView::mousePressEvent()
+                //复原cursor
+                if(m_bSetBorderCursor)
+                {
+                    m_bSetBorderCursor = false;
+                    unsetCursor();
+                }
             }
             else
             {
-                //非拖动中
-                QRect rcBoundingView;
-                rcBoundingView = sitem->viewBoundingRect(this);
+                m_bSetBorderCursor = true;
+                //sitem->setBorderCursor(nPosCode);
+                setCursor(sitem->borderCursor(nPosCode));
 
-                QPoint pt = event->pos();
+                return; //pass QGraphicsView::mousePressEvent()
+            }
 
-                int nPosCode;
-                nPosCode = posCode(pt, rcBoundingView);
-                if(nPosCode == CShapeItem::BHC_0)
-                {
-                    //复原cursor
-                    if(m_bSetBorderCursor)
-                    {
-                        m_bSetBorderCursor = false;
-                        unsetCursor();
-                    }
-                }
-                else
-                {
-                    m_bSetBorderCursor = true;
-                    //sitem->setBorderCursor(nPosCode);
-                    setCursor(sitem->borderCursor(nPosCode));
-
-                    return; //pass QGraphicsView::mousePressEvent()
-                }
-
-            }                //if(!sitem->m_bTrackBorder)
-
-        }               //if(sitem != 0)
+        }                //if(!sitem->m_bTrackBorder)
     }       //if(selectedItems.count()==1)
 
 
@@ -331,32 +326,29 @@ void CDraftView::mouseReleaseEvent(QMouseEvent *event)
     // 2.鼠标位于selectedBoarder的8个handle block中
     QList<QGraphicsItem*> selectedItems;
     selectedItems = scene()->selectedItems();
-    if(selectedItems.count()==1)
+    if(selectedItems.count()==1 && selectedItems.first()->type() > C2DItem::Type_Shape)
     {
         CShapeItem *sitem;
-        sitem = qgraphicsitem_cast<CShapeItem*>(selectedItems.first());
-        if(sitem != 0)
-        {
+        sitem = static_cast<CShapeItem*>(selectedItems.first());
 
-            //仅在没有mousePress时设置cursor
-            if(sitem->m_bTrackBorder)
-            {                //拖动selectedBorder handle中
-                sitem->ungrabMouse();
+        //仅在没有mousePress时设置cursor
+        if(sitem->m_bTrackBorder)
+        {                //拖动selectedBorder handle中
+            sitem->ungrabMouse();
 
-                //mark
-                QPoint pt = event->pos();
-                sitem->setTrackBorder(false, CShapeItem::BHC_0, mapToScene(pt));
+            //mark
+            QPoint pt = event->pos();
+            sitem->setTrackBorder(false, CShapeItem::BHC_0, mapToScene(pt));
 
-                //restore cursor
-                if(m_bSetBorderCursor)
-                {
-                    m_bSetBorderCursor = false;
-                    unsetCursor();
-                }
-
-                return; //pass QGraphicsView::mouseReleaseEvent()
+            //restore cursor
+            if(m_bSetBorderCursor)
+            {
+                m_bSetBorderCursor = false;
+                unsetCursor();
             }
-        }               //if(sitem != 0)
+
+            return; //pass QGraphicsView::mouseReleaseEvent()
+        }
     }       //if(selectedItems.count()==1)
 
 

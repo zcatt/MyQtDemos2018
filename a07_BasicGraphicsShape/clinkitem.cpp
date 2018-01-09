@@ -218,6 +218,6 @@ void CLinkItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 
 int CLinkItem::type() const
 {
-    return CShapeItem::LinkType;
+    return Type;
 }
 

@@ -9,7 +9,9 @@ SUBDIRS += \
     a06_ExtensionDialog \
     a07_BasicGraphicsShape \
     a08_LineEdit \
-    a09_PopupLineEdit
+    a09_PopupLineEdit \
+    a0a_DockWidget \
+    a0b_AddPlugin
 
 OTHER_FILES += \
     Note.txt \

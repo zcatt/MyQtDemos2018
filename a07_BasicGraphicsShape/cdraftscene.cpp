@@ -7,7 +7,7 @@
 #include "cdraftscene.h"
 
 CDraftScene::CDraftScene(MainWindow *pMainWindow, QObject *parent)
-        : QGraphicsScene(parent), m_pMainWindow(pMainWindow), m_nShapeMode(CShapeItem::ShapeType_0)
+        : QGraphicsScene(parent), m_pMainWindow(pMainWindow), m_nShapeMode(C2DItem::ShapeType_2D)
             , m_pLine(0)
 {
 
@@ -21,7 +21,7 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
         return;
 
     m_nShapeMode = m_pMainWindow->GetCurrentShapeType();
-    if(m_nShapeMode != CShapeItem::ShapeType_0)
+    if(m_nShapeMode != C2DItem::ShapeType_2D)
     {
         m_pMainWindow->ResetShapeType();
 
@@ -35,13 +35,36 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
                 emit itemInserted(triangle);
             }
             break;
-        case CShapeItem::ShapeType_Circle:
-        case CShapeItem::ShapeType_Rectangle:
         case CShapeItem::ShapeType_Link:
+        {
             m_pLine = new CLinkItem;
             m_pLine->setLine(QLineF(mouseEvent->scenePos(), mouseEvent->scenePos()));
             addItem(m_pLine);
             emit itemInserted(m_pLine);
+        }
+            break;
+        case CShapeItem::ShapeType_Circle:
+        {
+            QGraphicsEllipseItem *circle = new QGraphicsEllipseItem;
+            circle->setFlag(QGraphicsItem::ItemIsMovable, true);
+            circle->setFlag(QGraphicsItem::ItemIsSelectable, true);
+
+            circle->setRect(-50,-50,50,50);
+            addItem(circle);
+            circle->setPos(mouseEvent->scenePos());
+            emit itemInserted(circle);
+        }
+            break;
+        case CShapeItem::ShapeType_Rectangle:
+        {
+            QGraphicsRectItem *rect = new QGraphicsRectItem;
+            rect->setRect(-50,-50,50,50);
+            rect->setFlag(QGraphicsItem::ItemIsMovable, true);
+            rect->setFlag(QGraphicsItem::ItemIsSelectable, true);
+            addItem(rect);
+            rect->setPos(mouseEvent->scenePos());
+            emit itemInserted(rect);
+        }
             break;
         }
     }

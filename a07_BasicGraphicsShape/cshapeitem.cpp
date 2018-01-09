@@ -51,7 +51,7 @@ void C2DItem::CreateHighlightSelected(C2DItem *item, QPainter *painter
         return;
 
     qreal itemPenWidth;
-    if(item->type() >= LinkType)
+    if(item->type() >= Type_Link)
     {
         itemPenWidth = item->pen().widthF();
     }
@@ -82,11 +82,17 @@ C2DItem::C2DItem(QGraphicsItem *parent)
 {
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemIsSelectable, true);
-    setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+    //setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
     //setFlag(QGraphicsItem::ItemClipsToShape, true);
 
     setAcceptHoverEvents(true);
 }
+
+int C2DItem::type() const
+{
+    return Type;
+}
+
 
 
 QPen C2DItem::pen() const
@@ -153,6 +159,12 @@ void CShapeItem::setShapeItemFlags(ShapeItemFlags flags)
 {
     m_nShapeItemFlag = flags;
 }
+
+int CShapeItem::type() const
+{
+    return Type;
+}
+
 
 
 void CShapeItem::setPen(const QPen &pen)
@@ -564,7 +576,7 @@ void CTriangleItem::updateBoundingRect(void)
     qDebug()<< "updateBoundingRect(), boundingRect="<< m_rectBounding;
 }
 
-
+#if 0
 void CTriangleItem::drawSelectBorder(QPainter *painter, QRectF rect)
 {
     painter->save();
@@ -629,7 +641,7 @@ void CTriangleItem::drawSelectBorder(QPainter *painter, QRectF rect)
 
     painter->restore();
 }
-
+#endif
 
 void CTriangleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -674,7 +686,7 @@ void CTriangleItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *opt
 
 int CTriangleItem::type() const
 {
-    return CShapeItem::TriangleType;
+    return Type;
 }
 
 

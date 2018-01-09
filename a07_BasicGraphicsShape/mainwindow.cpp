@@ -72,7 +72,7 @@ int MainWindow::GetCurrentShapeType(void)
     if(!w)
     {
         qDebug()<<"no currentWidget in m_pToolBox";
-        return CShapeItem::ShapeType_0;
+        return C2DItem::ShapeType_2D;
     }
 
     QListWidget *pListWidget = qobject_cast<QListWidget*>(w);
@@ -80,7 +80,7 @@ int MainWindow::GetCurrentShapeType(void)
     if(!pListWidget)
     {
         qDebug()<<"not a listWidget";
-        return CShapeItem::ShapeType_0;
+        return C2DItem::ShapeType_2D;
     }
 
     QListWidgetItem *pItem;
@@ -89,7 +89,7 @@ int MainWindow::GetCurrentShapeType(void)
     if(!pItem)
     {
         qDebug()<<"no current item.";
-        return CShapeItem::ShapeType_0;
+        return C2DItem::ShapeType_2D;
     }
 
     return pItem->data(Qt::UserRole).toInt();

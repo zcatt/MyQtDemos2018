@@ -4,12 +4,23 @@
 #include <QGraphicsItem>
 #include <QLineF>
 
+
+template <class T> inline T cgraphicsitem_cast(QGraphicsItem *item)
+{
+    typedef typename std::remove_cv<typename std::remove_pointer<T>::type>::type Item;
+    bool b1 = (int(Item::Type) == int(QGraphicsItem::Type));
+    bool b2 = (item && int(Item::Type) == item->type());
+    return (b1 || b2) ? static_cast<T>(item) : 0;
+}
+
+
 class C2DItem : public QGraphicsItem
 {
 public:
     enum ShapeType
     {
-        ShapeType_0,
+        ShapeType_2D = 0,
+        ShapeType_Shape,
         ShapeType_Link,
         ShapeType_Triangle,
         ShapeType_Circle,
@@ -19,11 +30,14 @@ public:
 
     enum ShapeItemType
     {
-        LinkType = UserType + 1,
-        RectType,
-        TriangleType,
-        CircleType,
+        Type_2D = UserType + 1,
+        Type_Shape,
+        Type_Link,
+        Type_Rect,
+        Type_Triangle,
+        Type_Circle,
     };
+
 public:
     static QPainterPath CreateShapeFromPath(const QPainterPath &path, const QPen &pen);
     static void CreateHighlightSelected(C2DItem *item, QPainter *painter
@@ -39,6 +53,9 @@ public:
     QPainterPath opaqueArea() const override;
 
     QRectF boundingRect() const override;
+
+    enum { Type = Type_2D };
+    int type() const override;
 
 public:
     QPen m_pen;
@@ -102,6 +119,8 @@ public:
 
     QPainterPath shape() const override;
 
+    enum { Type = Type_Shape };
+    int type() const override;
 
 
 protected:
@@ -141,9 +160,12 @@ public:
     virtual void setTrackBorder(bool bTrack, int nBHCode, QPointF ptScene) override;
     virtual void setBoundingRect(QSizeF size) override;
     virtual void updateBoundingRect(void) override;
-
+#if 0
     void drawSelectBorder(QPainter *painter, QRectF rect);
+#endif
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) override;
+
+    enum { Type = Type_Triangle };
     int type() const override;
 
 protected:

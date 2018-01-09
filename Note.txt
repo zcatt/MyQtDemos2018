@@ -31,6 +31,8 @@ DemoName                          Note
 .a07_BasicGraphicsShape     一些graphics shapes的tips
 .a08_LineEdit               QLineEdit的使用
 .a09_PopupLineEdit	    QLineEdit作为popup实现in-place edit.
+.a0a_DockWidget             QMainWindow和QDockWidget的演示
+.a0b_AddPlugin              一个简单的app plugin，演示了如何定义和使用plugin
 
 
 
