@@ -11,7 +11,8 @@ SUBDIRS += \
     a08_LineEdit \
     a09_PopupLineEdit \
     a0a_DockWidget \
-    a0b_AddPlugin
+    a0b_AddPlugin \
+    a0c_Simple
 
 OTHER_FILES += \
     Note.txt \
