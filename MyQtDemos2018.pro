@@ -12,7 +12,8 @@ SUBDIRS += \
     a09_PopupLineEdit \
     a0a_DockWidget \
     a0b_AddPlugin \
-    a0c_Simple
+    a0c_Simple \
+    a0d_CanvasTyped
 
 OTHER_FILES += \
     Note.txt \

@@ -34,6 +34,7 @@ DemoName                          Note
 .a0a_DockWidget             QMainWindow和QDockWidget的演示
 .a0b_AddPlugin              一个简单的app plugin，演示了如何定义和使用plugin
 .a0c_Simple                 Derived from QtPropertyBrowser/examples/simple
+.a0d_CanvasTyped            Derived from QtPropertyBrowser/examples/Canvas_typed
 
 
 
