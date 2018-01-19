@@ -14,7 +14,8 @@ SUBDIRS += \
     a0b_AddPlugin \
     a0c_Simple \
     a0d_CanvasTyped \
-    a0d_PropDemo
+    a0d_PropDemo \
+    a0f_PropObject
 
 OTHER_FILES += \
     Note.txt \

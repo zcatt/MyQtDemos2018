@@ -36,6 +36,7 @@ DemoName                          Note
 .a0c_Simple                 Derived from QtPropertyBrowser/examples/simple
 .a0d_CanvasTyped            Derived from QtPropertyBrowser/examples/Canvas_typed
 .a0d_PropDemo               Derived from QtPropertyBrowser/examples/demo
+.a0f_PropObject             Derived from QtPropertyBrowser/examples/object_controller
 
 
 
