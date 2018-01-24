@@ -15,7 +15,8 @@ SUBDIRS += \
     a0c_Simple \
     a0d_CanvasTyped \
     a0d_PropDemo \
-    a0f_PropObject
+    a0f_PropObject \
+    a10_ModelessDialog
 
 OTHER_FILES += \
     Note.txt \
