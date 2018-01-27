@@ -38,6 +38,7 @@ DemoName                          Note
 .a0d_PropDemo               Derived from QtPropertyBrowser/examples/demo
 .a0f_PropObject             Derived from QtPropertyBrowser/examples/object_controller
 .a10_ModelessDialog         非模态对话框的使用.
+.a11_CaptureScreen,         屏幕截取
 
 
 
