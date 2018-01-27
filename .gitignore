@@ -1,5 +1,6 @@
 # Qt project user config
 *.pro.user
+build-*
 
 #visual studio
 .vs

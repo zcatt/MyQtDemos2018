@@ -17,7 +17,8 @@ SUBDIRS += \
     a0d_PropDemo \
     a0f_PropObject \
     a10_ModelessDialog \
-    a11_CaptureScreen
+    a11_CaptureScreen \
+    a12_IniSetting
 
 OTHER_FILES += \
     Note.txt \
