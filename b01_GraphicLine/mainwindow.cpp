@@ -1,13 +1,21 @@
-#include <QtWidgets>
+﻿#include <QtWidgets>
 
-#include "cdraftscene.h"
-#include "cdraftview.h"
-#include "cshapeitem.h"
-#include "clinkitem.h"
+#include "shapeitem.h"
+#include "draftscene.h"
+#include "draftview.h"
+
 #include "mainwindow.h"
 
-MainWindow::MainWindow(QWidget *parent): QMainWindow(parent)
+MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
+#if 1
+    m_pGScene = new CDraftScene(this);
+    m_pGScene->setSceneRect(QRectF(0, 0, 5000, 5000));
+    connect(m_pGScene, &CDraftScene::itemInserted, this, &MainWindow::itemInserted);
+    m_pGView = new CDraftView(m_pGScene);
+#endif
+    setCentralWidget(m_pGView);
+
     CreateToolBox();
     AddShapeItems();
 
@@ -16,11 +24,7 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent)
     dock->setWidget(m_pToolBox);
     addDockWidget(Qt::LeftDockWidgetArea,dock);
 
-    m_pGScene = new CDraftScene(this);
-    m_pGScene->setSceneRect(QRectF(0, 0, 5000, 5000));
-    m_pGView = new CDraftView(m_pGScene);
 
-    setCentralWidget(m_pGView);
 
     setWindowTitle(tr("Basic Graphic Shapes"));
 
@@ -28,16 +32,15 @@ MainWindow::MainWindow(QWidget *parent): QMainWindow(parent)
 }
 
 MainWindow::~MainWindow()
-{}
+{
+}
 
 void MainWindow::CreateToolBox(void)
 {
-    m_pShapes = new QListWidget;
-    m_pAnnotations = new QListWidget;
-
     m_pToolBox = new QToolBox;
+
+    m_pShapes = new QListWidget;
     m_pToolBox->addItem(m_pShapes, tr("Shape"));
-    m_pToolBox->addItem(m_pAnnotations, tr("Annotation"));
 }
 
 void MainWindow::AddShapeItems(void)
@@ -45,24 +48,20 @@ void MainWindow::AddShapeItems(void)
     QListWidgetItem *item;
 
     item = new QListWidgetItem(tr("Select"));
+    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_2D));
     m_pShapes->addItem(item);
 
     item = new QListWidgetItem(QIcon(":/images/emotion1.png"), tr("line"));
     //item->setFlags(item->flags()& ~(Qt::ItemIsSelectable | Qt::ItemIsUserCheckable/* | Qt::ItemIsEnabled*/));
-    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Link));
-    m_pShapes->addItem(item);
-
-    item = new QListWidgetItem(QIcon(":/images/emotion2.png"), tr("triangle"));
-    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Triangle));
-    m_pShapes->addItem(item);
-
-    item = new QListWidgetItem(QIcon(":/images/emotion3.png"), tr("circle"));
-    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Circle));
+    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Line));
     m_pShapes->addItem(item);
 
     item = new QListWidgetItem(QIcon(":/images/emotion4.png"), tr("rect"));
-    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Rectangle));
+    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Rect));
     m_pShapes->addItem(item);
+
+    connect(m_pShapes, &QListWidget::currentItemChanged, this, &MainWindow::currentShapeChanged);
+
 }
 
 int MainWindow::GetCurrentShapeType(void)
@@ -72,7 +71,7 @@ int MainWindow::GetCurrentShapeType(void)
     if(!w)
     {
         qDebug()<<"no currentWidget in m_pToolBox";
-        return C2DItem::ShapeType_2D;
+        return C2DItem::ShapeType_None;
     }
 
     QListWidget *pListWidget = qobject_cast<QListWidget*>(w);
@@ -95,6 +94,7 @@ int MainWindow::GetCurrentShapeType(void)
     return pItem->data(Qt::UserRole).toInt();
 }
 
+
 void MainWindow::ResetShapeType(void)
 {
     QWidget *w;
@@ -114,7 +114,6 @@ void MainWindow::ResetShapeType(void)
     }
 
     pListWidget->setCurrentRow(0);
-    //pListWidget->setCurrentRow(-1);
 }
 
 
@@ -173,6 +172,19 @@ void MainWindow::createMenuAndToolBar()
 
 }
 
+void MainWindow::currentShapeChanged(QListWidgetItem *current, QListWidgetItem *previous)
+{
+    qDebug()<<"update curShapeType="<<current->data(Qt::UserRole).toInt();
+    m_pGScene->m_nCurShapeType = current->data(Qt::UserRole).toInt();
+}
+
+void MainWindow::itemInserted(QGraphicsItem *item)
+{
+    //当前选择的shape重置为select.
+#if 0
+    ResetShapeType();
+#endif
+}
 
 void MainWindow::zoomIn(void)
 {
@@ -239,4 +251,3 @@ void MainWindow::about(void)
                    tr("The <b>BasicGraphicsShape</b> example shows "
                       "use of the graphics framework and some tips."));
 }
-

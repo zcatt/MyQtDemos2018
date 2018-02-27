@@ -40,6 +40,7 @@ DemoName                          Note
 .a10_ModelessDialog         非模态对话框的使用.
 .a11_CaptureScreen,         屏幕截取.
 .a12_IniSetting,            保存到ini.
+.b01_GraphicLine,           连接线的实现。follow a07.
 
 
 

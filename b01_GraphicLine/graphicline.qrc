@@ -1,0 +1,14 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/emotion1.png</file>
+	<file>images/emotion2.png</file>
+	<file>images/emotion3.png</file>
+	<file>images/emotion4.png</file>
+	<file>images/pointer.png</file>
+	<file>images/bringtofront.png</file>
+	<file>images/delete.png</file>
+	<file>images/sendtoback.png</file>
+	<file>images/zoomin.png</file>
+	<file>images/zoomout.png</file>
+    </qresource>
+</RCC>
