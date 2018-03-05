@@ -5,6 +5,8 @@
 #include <QGraphicsItem>
 #include <QLineF>
 
+class CDraftView;
+class CShapeSelection;
 
 template <class T> inline T cgraphicsitem_cast(QGraphicsItem *item)
 {
@@ -23,24 +25,26 @@ public:
         ShapeType_None = 0,  //无效
         ShapeType_Select = ShapeType_None,
         ShapeType_2D,
-            ShapeType_Text,
+            //ShapeType_Text,
             ShapeType_Link,
                 ShapeType_Line,
             ShapeType_Shape,
                 ShapeType_Rect,
+                ShapeType_Text,
     };
 
     enum ShapeItemType
     {
         Type_2D = UserType + 1,
-        Type_Text,
         Type_Line,
         Type_Shape,
         Type_Rect,
+        Type_Text,
     };
 
 public:
-    static QPainterPath CreateShapeFromPath(const QPainterPath &path, const QPen &pen);
+    static QPainterPath CreateLineOutlineFromPath(const QPainterPath &path, const QPen &pen);
+    static QPainterPath CreateShapeOutlineFromPath(const QPainterPath &path, const QPen &pen);
     static void CreateHighlightSelected(C2DItem *item, QPainter *painter
                                         , const QStyleOptionGraphicsItem *option);
 
@@ -88,8 +92,8 @@ public:
 
     enum ShapeItemFlag
     {
-        SelectBorder = 0x1,     //选中时显示选中边框和8个handles， depend on GraphicsItemFlag::ItemIsSelectable
-        NotSizable = 0x02,      //选中边框不支持大小调整, depend on SelectBorder
+        NotSelectBorder = 0x01, //选中时不支持显示选中边框(和8个handles)， depend on GraphicsItemFlag::ItemIsSelectable
+        NotSizable = 0x02,      //选中边框不支持显示8个handles，不支持大小调整, depend on SelectBorder
     };
 
     Q_DECLARE_FLAGS(ShapeItemFlags, ShapeItemFlag)
@@ -97,6 +101,7 @@ public:
 
 public:
     CShapeItem(QGraphicsItem *parent = Q_NULLPTR);
+    ~CShapeItem();
 
     ShapeItemFlags shapeItemFlags() const;
     void setShapeItemFlag(ShapeItemFlag flag, bool enabled = true);
@@ -109,12 +114,13 @@ public:
     QSizeF minimalSize(void) const;
 
 
-    QRect viewBoundingRect(QGraphicsView *view);
-    static Qt::CursorShape borderCursor(BoarderHandleCode nBHCode);
-    void setBorderCursor(BoarderHandleCode nBHCode);
-    virtual void setTrackBorder(bool bTrack, BoarderHandleCode nBHCode=BHC_0, QPointF ptScene = QPointF(0,0));
-    virtual void trackBorder(QPointF ptScene);
+    CShapeSelection* getSelection(void);
+    bool beginSelection(CDraftView *pView, QPoint ptView);
+    bool endSelection(void);
+    bool trackSelection(QPoint ptView);
 
+
+    QRect viewBoundingRect(QGraphicsView *view);
 
     //size是新的boudingRect的实际大小，不含pen width.
     virtual void setBoundingRect(QSizeF size) = 0;
@@ -136,6 +142,8 @@ public:
     quint32 m_nShapeItemFlag;
     QSizeF m_sizeMin;
 
+
+    CShapeSelection *m_pSelection;
 
     //以下变量用于实现handle框
     bool m_bTrackingBorder;    //true, 如果鼠标已经点压边框的8个handle，进入resize模式
@@ -162,11 +170,6 @@ public:
     virtual void setBoundingRect(QSizeF size) override;
     virtual void updateBoundingRect(void) override;
 
-
-#if 0
-    void drawSelectBorder(QPainter *painter, QRectF rect);
-#endif
-
     //QPainterPath shape() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) override;
 
@@ -183,46 +186,36 @@ public:
 };
 
 
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-class CLineItem : public C2DItem
+//用作名字标签时，依附于主item
+//自动计算字串的roundingRect.
+class CTextItem : public CShapeItem
 {
 public:
-    explicit CLineItem(QGraphicsItem *parent = Q_NULLPTR);
-    explicit CLineItem(const QLineF &line, QGraphicsItem *parent = Q_NULLPTR);
-    explicit CLineItem(qreal x1, qreal y1, qreal x2, qreal y2, QGraphicsItem *parent = Q_NULLPTR);
-    ~CLineItem();
+    explicit CTextItem(C2DItem *parent= Q_NULLPTR);
 
-    QVector<QPointF> points(void);
+    void clear(void);
+    QString text(void) const;
+    void setText(const QString &text);
 
-    virtual void setPen(const QPen &pen) override;
+    //QMarginsF QLineEdit::textMargins() const;
+    //void setTextMargins(const QMarginsF &margins);
 
+    QRectF rect() const;
 
-    int pointCount(void) const;
-    QPointF point(int index) const;
-    void setPoint(int index, const QPointF &point);
-
-    void insertPoint(int index, const QPointF &point);
-    void removePoint(int index);
-
-    QLineF line() const;
-    void setLine(const QLineF &line);
-    inline void setLine(qreal x1, qreal y1, qreal x2, qreal y2)
-                { setLine(QLineF(x1, y1, x2, y2)); }
-
-    virtual void updateBoundingRect(void);
-    //QRectF boundingRect() const override;
-    QPainterPath shape() const override;
-
+    virtual void setBoundingRect(QSizeF size) override;
+    virtual void updateBoundingRect(void) override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) override;
 
-
-    enum{ Type = Type_Line};
+    enum { Type = Type_Text };
     int type() const override;
 
+signals:
+    void textChanged(const QString &text);
+
 public:
-    QVector<QPointF> m_points;  //in item coord.
+    QString m_Name;
+    //QMarginsF m_margins;
+
 };
-
-
 
 #endif // SHAPEITEM_H

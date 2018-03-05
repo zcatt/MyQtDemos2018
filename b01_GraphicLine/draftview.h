@@ -16,10 +16,6 @@ public:
     ~CDraftView();
 
 protected:
-#if 1
-    void drawSelectBorder(QPainter *painter, QGraphicsItem *item, QRect rectViewBounding);
-    static CShapeItem::BoarderHandleCode posCode(QPoint &point, QRect &rect);
-#endif
     void paintEvent(QPaintEvent *event) override;
     void drawBackground(QPainter *painter, const QRectF &rect) override;
     void drawForeground(QPainter *painter, const QRectF &rect) override;

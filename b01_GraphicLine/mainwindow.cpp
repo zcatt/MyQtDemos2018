@@ -1,4 +1,4 @@
-﻿#include <QtWidgets>
+﻿#include "preheader.h"
 
 #include "shapeitem.h"
 #include "draftscene.h"
@@ -6,18 +6,24 @@
 
 #include "mainwindow.h"
 
+MainWindow *mainWin = 0;
+
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 {
-#if 1
-    m_pGScene = new CDraftScene(this);
-    m_pGScene->setSceneRect(QRectF(0, 0, 5000, 5000));
-    connect(m_pGScene, &CDraftScene::itemInserted, this, &MainWindow::itemInserted);
-    m_pGView = new CDraftView(m_pGScene);
-#endif
+    m_pGView = new CDraftView;
     setCentralWidget(m_pGView);
+
+    m_pGScene = new CDraftScene(this);
+    //m_pGScene->setSceneRect(QRectF(0, 0, 5000, 5000));
+    m_pGScene->setSceneRect(QRectF(0, 0, 500, 300));
+    connect(m_pGScene, &CDraftScene::itemInserted, this, &MainWindow::itemInserted);
+    m_pGView->setScene(m_pGScene);
 
     CreateToolBox();
     AddShapeItems();
+
+    createMenuAndToolBar();
+    createStatusBar();
 
     QDockWidget *dock = new QDockWidget;
     dock->setWindowTitle(tr("Tools"));
@@ -25,14 +31,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     addDockWidget(Qt::LeftDockWidgetArea,dock);
 
 
-
     setWindowTitle(tr("Basic Graphic Shapes"));
 
-    createMenuAndToolBar();
+
+    mainWin = this;
 }
 
 MainWindow::~MainWindow()
 {
+    mainWin = 0;
 }
 
 void MainWindow::CreateToolBox(void)
@@ -48,7 +55,7 @@ void MainWindow::AddShapeItems(void)
     QListWidgetItem *item;
 
     item = new QListWidgetItem(tr("Select"));
-    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_2D));
+    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Select));
     m_pShapes->addItem(item);
 
     item = new QListWidgetItem(QIcon(":/images/emotion1.png"), tr("line"));
@@ -56,8 +63,12 @@ void MainWindow::AddShapeItems(void)
     item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Line));
     m_pShapes->addItem(item);
 
-    item = new QListWidgetItem(QIcon(":/images/emotion4.png"), tr("rect"));
+    item = new QListWidgetItem(QIcon(":/images/emotion2.png"), tr("rect"));
     item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Rect));
+    m_pShapes->addItem(item);
+
+    item = new QListWidgetItem(QIcon(":/images/emotion3.png"), tr("text"));
+    item->setData(Qt::UserRole, QVariant(CShapeItem::ShapeType_Text));
     m_pShapes->addItem(item);
 
     connect(m_pShapes, &QListWidget::currentItemChanged, this, &MainWindow::currentShapeChanged);
@@ -135,13 +146,15 @@ void MainWindow::createMenuAndToolBar()
     deleteAction->setStatusTip(tr("Delete item from diagram"));
     connect(deleteAction, SIGNAL(triggered()), this, SLOT(deleteItem()));
 
+    //TODO, deleteAction->setEnabled(false);
+
     QAction *zoomInAction = new QAction(QIcon(":/images/zoomin.png"), tr("Zoom on"), this);
-    zoomInAction->setShortcut(tr("+"));
+    zoomInAction->setShortcut(QString("+"));
     zoomInAction->setStatusTip(tr("Zoom in."));
     connect(zoomInAction, SIGNAL(triggered()), this, SLOT(zoomIn()));
 
     QAction *zoomOutAction = new QAction(QIcon(":/images/zoomout.png"), tr("Zoom out"), this);
-    zoomOutAction->setShortcut(tr("-"));
+    zoomOutAction->setShortcut(QString("-"));
     zoomOutAction->setStatusTip(tr("Zoom out."));
     connect(zoomOutAction, SIGNAL(triggered()), this, SLOT(zoomOut()));
 
@@ -172,43 +185,98 @@ void MainWindow::createMenuAndToolBar()
 
 }
 
+void MainWindow::createStatusBar(void)
+{
+    QStatusBar *sb = statusBar();
+
+    m_statusBarPos= new QLabel;
+    sb->addPermanentWidget(m_statusBarPos);
+
+    //QGraphicsView默认在开始时是关闭mouseTracking的，直到加入一个QGraphicsItem为止.
+    m_pGView->viewport()->setMouseTracking(true);
+}
+
+void MainWindow::showMousePos(QPoint ptView)
+{
+    QPointF pt = m_pGView->mapToScene(ptView);
+
+    QString s;
+
+    s= QString("View(%1,%2) Scene(%3,%4)").arg(ptView.x()).arg(ptView.y()).arg(pt.x()).arg(pt.y());
+    m_statusBarPos->setText(s);
+
+    statusBar()->showMessage(s);
+}
+
+
 void MainWindow::currentShapeChanged(QListWidgetItem *current, QListWidgetItem *previous)
 {
+    Q_UNUSED(previous);
     qDebug()<<"update curShapeType="<<current->data(Qt::UserRole).toInt();
     m_pGScene->m_nCurShapeType = current->data(Qt::UserRole).toInt();
 }
 
 void MainWindow::itemInserted(QGraphicsItem *item)
 {
+    Q_UNUSED(item);
     //当前选择的shape重置为select.
-#if 0
+#if 1
     ResetShapeType();
 #endif
 }
 
 void MainWindow::zoomIn(void)
 {
-    QMatrix oldMatrix = m_pGView->matrix();
-    //m_pGView->resetMatrix();
+#if 1
+    QTransform oldMatrix = m_pGView->transform();
     m_pGView->translate(oldMatrix.dx(), oldMatrix.dy());
-
     m_pGView->scale(2.0, 2.0);
+#else
+    qDebug()<<"zoom In";
+
+    //m_pGView->setTransformationAnchor(QGraphicsView::NoAnchor);
+
+    QTransform matrix = m_pGView->transform();
+    QTransform vpm = m_pGView->viewportTransform();
+
+    qDebug()<<"         old matrix="<<matrix;
+    qDebug()<<"         old vpm="<<vpm;
+    m_pGView->translate(50, 50);
+    matrix = m_pGView->transform();
+    vpm = m_pGView->viewportTransform();
+    qDebug()<<"         new matrix="<<matrix;
+    qDebug()<<"         new vpm="<<vpm;
+#endif
 }
 
 void MainWindow::zoomOut(void)
 {
-    QMatrix oldMatrix = m_pGView->matrix();
-    //m_pGView->resetMatrix();
+#if 1
+    QTransform oldMatrix = m_pGView->transform();
     m_pGView->translate(oldMatrix.dx(), oldMatrix.dy());
-
     m_pGView->scale(0.5, 0.5);
 
+#else
+    qDebug()<<"zoom Out";
+    //m_pGView->setTransformationAnchor(QGraphicsView::NoAnchor);
+
+    QTransform matrix = m_pGView->transform();
+    QTransform vpm = m_pGView->viewportTransform();
+    qDebug()<<"zoomOut, old matrix="<<matrix;
+    qDebug()<<"         old vpm="<<vpm;
+    m_pGView->translate(-50, -50);
+    matrix = m_pGView->transform();
+    vpm = m_pGView->viewportTransform();
+    qDebug()<<"         new matrix="<<matrix;
+    qDebug()<<"         new vpm="<<vpm;
+
+#endif
 }
 
 void MainWindow::deleteItem(void)
 {
     foreach (QGraphicsItem *item, m_pGScene->selectedItems()) {
-        m_pGScene->removeItem(item);
+        //m_pGScene->removeItem(item);
         delete item;
      }
 }

@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 
+class QLabel;
 class QGraphicsItem;
 
 class CDraftView;
@@ -25,6 +26,8 @@ public:
     void ResetShapeType(void);
 
     void createMenuAndToolBar(void);
+    void createStatusBar(void);
+    void showMousePos(QPoint ptView);
 
 public slots:
     void currentShapeChanged(QListWidgetItem *current, QListWidgetItem *previous);
@@ -38,6 +41,8 @@ public slots:
     void about(void);
 
 public:
+    QLabel* m_statusBarPos;
+
     CDraftView *m_pGView;
     CDraftScene *m_pGScene;
 
@@ -45,5 +50,7 @@ public:
     QListWidget *m_pShapes;
 
 };
+
+extern MainWindow *mainWin;
 
 #endif // MAINWINDOW_H

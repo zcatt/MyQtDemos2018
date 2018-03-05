@@ -1,6 +1,8 @@
-﻿#include <QtWidgets>
+﻿#include "preheader.h"
+
 
 #include "shapeitem.h"
+#include "shapeselection.h"
 
 /*
  *
@@ -9,9 +11,41 @@
  */
 
 
+//borrowed from qt_graphicsItem_shapeFromPath@qt src
+//create outline path, = stroke path
+//根据pen的线宽创建path的轮廓.
+//要求path中仅含线宽为0的线条路径。若线过宽，则其strokPath无法覆盖原始线的区域。
+//也不应含有闭合的区域path，理由同上.
+//
+QPainterPath C2DItem::CreateLineOutlineFromPath(const QPainterPath &path, const QPen &pen)
+{
+    const qreal penWidthZero = qreal(0.00000001);
+
+    if (path == QPainterPath() || pen == Qt::NoPen)
+        return path;
+
+    QPainterPathStroker ps;
+
+    ps.setCapStyle(pen.capStyle());
+
+    if (pen.widthF() <= 0.0)
+        ps.setWidth(penWidthZero);
+    else
+        ps.setWidth(pen.widthF());
+
+    ps.setJoinStyle(pen.joinStyle());
+    ps.setMiterLimit(pen.miterLimit());
+
+    QPainterPath p = ps.createStroke(path);
+
+    //p.addPath(path);
+
+    return p;
+}
+
 //create shape path, = stroke path + origin path
-//borrowed from qt src
-QPainterPath C2DItem::CreateShapeFromPath(const QPainterPath &path, const QPen &pen)
+//borrowed from qt_graphicsItem_shapeFromPath@qt src
+QPainterPath C2DItem::CreateShapeOutlineFromPath(const QPainterPath &path, const QPen &pen)
 {
     const qreal penWidthZero = qreal(0.00000001);
 
@@ -36,6 +70,8 @@ QPainterPath C2DItem::CreateShapeFromPath(const QPainterPath &path, const QPen &
 
     return p;
 }
+
+
 
 //create the selected tip of bounding rect with dash line.
 //borrowed from qt src
@@ -139,12 +175,18 @@ QRectF C2DItem::boundingRect() const
  */
 
 
-CShapeItem::CShapeItem(QGraphicsItem *parent)
+CShapeItem::CShapeItem(QGraphicsItem *parent)        
         : C2DItem(parent), m_nShapeItemFlag(0), m_sizeMin(SelectBorderThickness*3 +2, SelectBorderThickness*3 +2)
-          , m_bTrackingBorder(false), m_nBorderHandleCode(BHC_0), m_ptPressed(), m_ptTrackPos(), m_rcPressed()
+            , m_pSelection(Q_NULLPTR)
+            , m_bTrackingBorder(false), m_nBorderHandleCode(BHC_0), m_ptPressed(), m_ptTrackPos(), m_rcPressed()
 {
 }
 
+CShapeItem::~CShapeItem()
+{
+    if(m_pSelection)
+        delete m_pSelection;
+}
 
 CShapeItem::ShapeItemFlags CShapeItem::shapeItemFlags() const
 {
@@ -192,6 +234,78 @@ QSizeF CShapeItem::minimalSize(void) const
     return m_sizeMin;
 }
 
+
+//return
+//  0,   不在调整大小和位置模式
+CShapeSelection* CShapeItem::getSelection(void)
+{
+    return m_pSelection;
+}
+
+//鼠标在CDraftView中点中handle，进入拖拽调整大小和位置模式。
+//param
+//  pView, in,
+//  ptView, in,   in view coord
+//return
+//  true,         进入调整大小模式.
+//  false,            条件不具备，不进入调整大小模式.
+//
+bool CShapeItem::beginSelection(CDraftView *pView, QPoint ptView)
+{
+    Q_ASSERT(m_pSelection == 0);
+
+    m_pSelection = new CShapeSelection(this);
+    bool bOk = m_pSelection->beginTracking(pView, ptView);
+
+    if(!bOk)
+    {
+        delete m_pSelection;
+        m_pSelection = 0;
+    }
+
+    qDebug()<<"CShapeItem::beginSelection ------------- OK="<<bOk;
+    return bOk;
+}
+
+//若在调整大小和位置模式，则退出
+//return
+//  true, end selection
+//  false, no selection
+bool CShapeItem::endSelection(void)
+{
+    if(m_pSelection!=0)
+    {
+        m_pSelection->endTracking();
+        delete m_pSelection;
+        m_pSelection = 0;
+        return true;
+    }
+    return false;
+}
+
+//return
+//  true,  在调整中
+//  false， 不在调整中
+bool CShapeItem::trackSelection(QPoint ptView)
+{
+    qDebug()<<"CShapeItem::trackSelection, m_pSelection"<< m_pSelection;
+    if(m_pSelection != 0)
+    {
+
+        m_pSelection->track(ptView);
+        return true;
+    }
+    return false;
+}
+
+
+
+
+
+
+
+
+
 bool CShapeItem::isTrackingBorder(void)
 {
     return m_bTrackingBorder;
@@ -209,192 +323,30 @@ QRect CShapeItem::viewBoundingRect(QGraphicsView *view)
 }
 
 
-Qt::CursorShape CShapeItem::borderCursor(BoarderHandleCode nBHCode)
-{
-    Qt::CursorShape cursor = Qt::ArrowCursor;
-    switch(nBHCode)
-    {
-    case CShapeItem::BHC_LeftTop:
-    case CShapeItem::BHC_RightBottom:
-        cursor = Qt::SizeFDiagCursor;
-        break;
-    case CShapeItem::BHC_RightTop:
-    case CShapeItem::BHC_LeftBottom:
-        cursor = Qt::SizeBDiagCursor;
-        break;
-    case CShapeItem::BHC_CenterTop:
-    case CShapeItem::BHC_CenterBottom:
-        cursor = Qt::SizeVerCursor;
-        break;
-    case CShapeItem::BHC_RightCenter:
-    case CShapeItem::BHC_LeftCenter:
-        cursor = Qt::SizeHorCursor;
-        break;
-    case CShapeItem::BHC_0:
-    default:
-        break;
-    }
-    return cursor;
-}
-
-void CShapeItem::setBorderCursor(BoarderHandleCode nBHCode)
-{
-    setCursor(borderCursor(nBHCode));
-    return;
-}
-
-//鼠标在selectedBorder上情形，mousePress时设置bTrack=true并保存信息，
-//或mouseRelease时设置bTrack=false
-//
-void CShapeItem::setTrackBorder(bool bTrack, BoarderHandleCode nBHCode, QPointF ptScene)
-{
-    m_bTrackingBorder = bTrack;
-    if(bTrack)
-    {
-        m_nBorderHandleCode = nBHCode;
-        m_ptPressed = ptScene;
-        m_ptTrackPos = pos();
-        m_rcPressed = m_rectBounding;
-    }
-}
-
-//拖动边框过程中, 根据鼠标位置调整对象的大小和位置。
-//params
-// ptScene, in, in scene coord.
-//
-void CShapeItem::trackBorder(QPointF ptScene)
-{
-    if(!m_bTrackingBorder || m_nBorderHandleCode == BHC_0)
-    {
-        qDebug()<<"Warning! not in track status.";
-        return;
-    }
-
-    QSizeF size;
-    QPointF ptCur;
-
-    QPointF deltaLocal = mapFromScene(ptScene) - mapFromScene(m_ptPressed);
-    QPointF deltaParent;
-
-    qDebug()<<"old bounding = "<<m_rectBounding;
-
-    switch(m_nBorderHandleCode)
-    {
-
-    case BHC_RightBottom:
-        // adjust boundingRect
-        size = m_rcPressed.adjusted(0, 0, deltaLocal.x(), deltaLocal.y()).size();
-        setBoundingRect(size);
-
-        // adjust pos to keep leftTop not to move
-        deltaParent = mapToParent(m_rectBounding.topLeft()) - mapToParent(m_rcPressed.topLeft());
-        ptCur  = m_ptTrackPos - deltaParent;
-        setPos(ptCur);
-        qDebug()<<"new bounding = "<<m_rectBounding;
-        break;
-
-    case BHC_LeftTop:
-        size = m_rcPressed.adjusted(deltaLocal.x(), deltaLocal.y(), 0, 0).size();
-        setBoundingRect(size);
-
-        deltaParent = mapToParent(m_rectBounding.bottomRight()) - mapToParent(m_rcPressed.bottomRight());
-        ptCur  = m_ptTrackPos - deltaParent;
-        setPos(ptCur);
-        break;
-
-
-    case BHC_RightTop:
-        size = m_rcPressed.adjusted(0, deltaLocal.y(), deltaLocal.x(), 0).size();
-        setBoundingRect(size);
-
-        // adjust pos to keep leftTop not to move
-        deltaParent = mapToParent(m_rectBounding.bottomLeft()) - mapToParent(m_rcPressed.bottomLeft());
-        ptCur  = m_ptTrackPos - deltaParent;
-        setPos(ptCur);
-        break;
-
-    case BHC_LeftBottom:
-        size = m_rcPressed.adjusted(deltaLocal.x(), 0, 0, deltaLocal.y()).size();
-        setBoundingRect(size);
-
-        // adjust pos to keep leftTop not to move
-        deltaParent = mapToParent(m_rectBounding.topRight()) - mapToParent(m_rcPressed.topRight());
-        ptCur  = m_ptTrackPos - deltaParent;
-        setPos(ptCur);
-        break;
-
-    case BHC_CenterTop:
-        size = m_rcPressed.adjusted(0, deltaLocal.y(), 0, 0).size();
-        setBoundingRect(size);
-
-        deltaParent = mapToParent(m_rectBounding.bottomRight()) - mapToParent(m_rcPressed.bottomRight());
-        ptCur  = m_ptTrackPos;
-        ptCur.ry() -= deltaParent.y();
-        setPos(ptCur);
-        break;
-
-    case BHC_CenterBottom:
-        size = m_rcPressed.adjusted(0, 0, 0, deltaLocal.y()).size();
-        setBoundingRect(size);
-
-        deltaParent = mapToParent(m_rectBounding.topRight()) - mapToParent(m_rcPressed.topRight());
-        ptCur  = m_ptTrackPos;
-        ptCur.ry() -= deltaParent.y();
-        setPos(ptCur);
-        break;
-
-    case BHC_LeftCenter:
-        size = m_rcPressed.adjusted(deltaLocal.x(), 0, 0, 0).size();
-        setBoundingRect(size);
-
-        deltaParent = mapToParent(m_rectBounding.topRight()) - mapToParent(m_rcPressed.topRight());
-        ptCur  = m_ptTrackPos;
-        ptCur.rx() -= deltaParent.x();
-        setPos(ptCur);
-        break;
-
-    case BHC_RightCenter:
-        size = m_rcPressed.adjusted(0, 0, deltaLocal.x(),0).size();
-        setBoundingRect(size);
-
-        deltaParent = mapToParent(m_rectBounding.topLeft()) - mapToParent(m_rcPressed.topLeft());
-        ptCur  = m_ptTrackPos;
-        ptCur.rx() -= deltaParent.x();
-        setPos(ptCur);
-        break;
-    }
-
-}
-
-
 QPainterPath CShapeItem::shape() const
 {
     QPainterPath path;
 
-#if 1
     path.addRect(m_rectBounding);
     return path;
-
-#else
-    path.addPolygon(m_polygon);
-    return CShapeItem::CreateShapeFromPath(path, m_pen);
-
-#endif
 }
 
 void CShapeItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
+    Q_UNUSED(event);
     qDebug()<<"hover Enter";
 }
 
 void CShapeItem::hoverMoveEvent(QGraphicsSceneHoverEvent *event)
 {
+    Q_UNUSED(event);
     qDebug()<<"hover move";
 
 }
 
 void CShapeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 {
+    Q_UNUSED(event);
     qDebug()<<"hover Leave";
 
 }
@@ -412,19 +364,16 @@ void CShapeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
 CRectItem::CRectItem(QGraphicsItem *parent)
     :CShapeItem(parent), m_rc(-50,-50,100,100)
 {
-    setShapeItemFlag(SelectBorder);
 }
 
 CRectItem::CRectItem(const QRectF &rc, QGraphicsItem *parent) : CShapeItem(parent)
 {
-    setShapeItemFlag(SelectBorder);
     m_rc = rc;
 }
 
 CRectItem::CRectItem(const QPointF &leftTop, const QPointF &rightBottom, QGraphicsItem *parent)
     :CShapeItem(parent), m_rc(leftTop, rightBottom)
 {
-    setShapeItemFlag(SelectBorder);
 }
 
 CRectItem::~CRectItem()
@@ -592,8 +541,8 @@ void CRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     Q_UNUSED(widget);
     //painter->setRenderHint(QPainter::Antialiasing, true);
 
-    qDebug()<<"clipPath= "<<painter->clipPath();
-    qDebug()<<"clipRegion= "<<painter->clipRegion();
+    //qDebug()<<"clipPath= "<<painter->clipPath();
+    //qDebug()<<"clipRegion= "<<painter->clipRegion();
 
 
 #if 1
@@ -655,187 +604,132 @@ void CRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 
 
-
-
-
-
 /*
  *
- *    CLinkItem
+ *
+ * CTextItem
+ *
  *
  */
 
 
-CLineItem::CLineItem(QGraphicsItem *parent)
-        :C2DItem(parent), m_points(2)
+
+
+
+
+
+CTextItem::CTextItem(C2DItem *parent): CShapeItem(parent), m_Name()
 {
-    //setFlag(QGraphicsItem::ItemIsSelectable, false);
+    setShapeItemFlag(NotSizable, true);
+
 }
 
-CLineItem::CLineItem(const QLineF &line, QGraphicsItem *parent)
-        :C2DItem(parent), m_points(2)
+void CTextItem::clear(void)
 {
-    setLine(line);
+    prepareGeometryChange();
+    m_Name.clear();
+    updateBoundingRect();
+    update();
 }
 
-CLineItem::CLineItem(qreal x1, qreal y1, qreal x2, qreal y2, QGraphicsItem *parent)
-        :C2DItem(parent), m_points(2)
+QString CTextItem::text(void) const
 {
-    setLine(x1,y1,x2,y2);
+    return m_Name;
 }
 
-CLineItem::~CLineItem()
+void CTextItem::setText(const QString &text)
 {
+    prepareGeometryChange();
+    m_Name=text;
+    updateBoundingRect();
+    update();
 }
 
+//QMarginsF QLineEdit::textMargins() const;
+//void setTextMargins(const QMarginsF &margins);
 
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-QVector<QPointF> CLineItem::points(void)
+QRectF CTextItem::rect() const
 {
-    return m_points;
+    return m_rectBounding;
 }
 
-void CLineItem::setPen(const QPen &pen)
+void CTextItem::setBoundingRect(QSizeF size)
 {
-    if(m_pen == pen)
+    Q_UNUSED(size);
+
+    Q_ASSERT(false);
+}
+
+void CTextItem::updateBoundingRect(void)
+{
+    if(m_Name.isEmpty())
+    {
         return;
-
-    prepareGeometryChange();
-    m_pen = pen;
-    updateBoundingRect();
-    update();
-}
-
-
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-void CLineItem::updateBoundingRect(void)
-{
-    if(m_pen.style() == Qt::NoPen || m_pen.widthF() == 0.0)
-    {
-        const qreal x1 = m_points[0].x();
-        const qreal x2 = m_points[1].x();
-        const qreal y1 = m_points[0].y();
-        const qreal y2 = m_points[1].y();
-        qreal lx = qMin(x1, x2);
-        qreal rx = qMax(x1, x2);
-        qreal ty = qMin(y1, y2);
-        qreal by = qMax(y1, y2);
-        m_rectBounding.setRect(lx, ty, rx - lx, by - ty);
-    }
-    else
-    {
-        m_rectBounding = shape().controlPointRect();
-    }
-}
-
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-QPainterPath CLineItem::shape() const
-{
-    QPainterPath path;
-    if (m_points.count() <2 || QLineF(m_points[0], m_points[1]) == QLineF())
-        return path;
-
-    path.moveTo(m_points[0]);
-    for(int i = 1; i< m_points.count(); i++)
-    {
-        path.lineTo(m_points[i]);
+        m_rectBounding.setRect(0,0,0,0);
     }
 
-    QPen pen = m_pen;
-    pen.setWidthF(10);
-    return CreateShapeFromPath(path, pen);
+    QFont fnt;
 
+    //TODO, 设置字形和字号
+
+    //qDebug()<<fnt.pointSizeF();
+    //fnt.setPointSizeF(12.0);
+
+    QFontMetricsF fm(fnt);
+    m_rectBounding = fm.boundingRect(m_Name);
+
+#if 1
+    qreal thickness = (pen().style() == Qt::NoPen) ? 0.0 :m_pen.widthF()/2.0;
+    qDebug()<<"thickness ="<< thickness;
+    thickness+=1;
+
+    if (thickness > 0.0)
+        m_rectBounding.adjust(-thickness, -thickness, thickness, thickness);
+#endif
 }
 
-int CLineItem::pointCount(void) const
+void CTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
-    return m_points.count();
-}
+    Q_UNUSED(widget);
+    //painter->setRenderHint(QPainter::Antialiasing, true);
 
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-//return the point, in item coord
-QPointF CLineItem::point(int index) const
-{
-    return m_points[index];
-}
-
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-//param
-// index, in,
-// point, in, in item coord
-void CLineItem::setPoint(int index, const QPointF &point)
-{
-    Q_ASSERT(index >= m_points.count());
-    prepareGeometryChange();
-    m_points[index] = point;
-    updateBoundingRect();
-    update();
-}
-
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-//param
-// index, in,
-// point, in, in item coord
-void CLineItem::insertPoint(int index, const QPointF &point)
-{
-    prepareGeometryChange();
-    m_points.insert(index, point);
-    updateBoundingRect();
-    update();
-}
-
-void CLineItem::removePoint(int index)
-{
-    prepareGeometryChange();
-    m_points.remove(index);
-    updateBoundingRect();
-    update();
-}
-
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-//return the first lineF seg, in item coord
-QLineF CLineItem::line() const
-{
-    return QLineF(m_points[0], m_points[1]);
-}
-
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-//set the first lineF seg, in item coord
-void CLineItem::setLine(const QLineF &line)
-{
-    prepareGeometryChange();
-
-    m_points.resize(2);
-    m_points[0] = line.p1();
-    m_points[1] = line.p2();
-
-    updateBoundingRect();
-    update();
-}
+    qDebug()<<"clipPath= "<<painter->clipPath();
+    qDebug()<<"clipRegion= "<<painter->clipRegion();
 
 
-//特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
-void CLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
-{
-    qDebug()<<"paint lines:"<<m_points;
-    //painter->setPen(QPen(Qt::red, 1, Qt::SolidLine));
-    painter->setPen(m_pen);
-    painter->drawLines(m_points);
+#if 1
+    painter->setPen(Qt::red);
+    QBrush brush = painter->brush();
+    painter->setBrush(Qt::yellow);
+    painter->drawPath(shape());
+    painter->setBrush(brush);
 
+
+    QFont fnt;
+    //TODO, 设置字形和字号
+    painter->setFont(fnt);
+#if 0
+    QFontMetricsF fm(fnt);
+
+    painter->drawText(m_rectBounding.left(), m_rectBounding.top()+fm.ascent(), m_Name);
+#else
+    painter->drawText(m_rectBounding, 0, m_Name);
+#endif
+
+#endif
+
+
+#if 1
     if (option->state & QStyle::State_Selected)
-        CreateHighlightSelected(this, painter, option);
+    {
+        CShapeItem::CreateHighlightSelected(this, painter, option);
+    }
+#endif
+
 }
 
-int CLineItem::type() const
+int CTextItem::type() const
 {
     return Type;
 }
-
-
-
-
-
-
-
-
 
