@@ -33,7 +33,8 @@ SOURCES += \
     draftview.cpp \
     shapeitem.cpp \
     lineitem.cpp \
-    shapeselection.cpp
+    shapeselection.cpp \
+    propeditor.cpp
 
 HEADERS += \
     preheader.h \
@@ -42,7 +43,12 @@ HEADERS += \
     draftview.h \
     shapeitem.h \
     lineitem.h \
-    shapeselection.h
+    shapeselection.h \
+    propeditor.h
 
 RESOURCES += \
     graphicline.qrc
+
+!include($$[QT_INSTALL_PREFIX]/../Src/qttools/src/shared/qtpropertybrowser/qtpropertybrowser.pri) {
+    error("Can't find qtpropertybrowser.pri.")
+}

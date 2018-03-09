@@ -8,6 +8,7 @@ class QGraphicsItem;
 
 class CDraftView;
 class CDraftScene;
+class CPropEditor;
 class QToolBox;
 class QListWidget;
 class QListWidgetItem;
@@ -27,11 +28,14 @@ public:
 
     void createMenuAndToolBar(void);
     void createStatusBar(void);
+    void createPropEditor(void);
+
     void showMousePos(QPoint ptView);
 
 public slots:
     void currentShapeChanged(QListWidgetItem *current, QListWidgetItem *previous);
     void itemInserted(QGraphicsItem *item);
+    void selectionChanged(void);
 
     void zoomIn(void);
     void zoomOut(void);
@@ -45,6 +49,8 @@ public:
 
     CDraftView *m_pGView;
     CDraftScene *m_pGScene;
+
+    CPropEditor *m_pPropEditor;
 
     QToolBox *m_pToolBox;
     QListWidget *m_pShapes;

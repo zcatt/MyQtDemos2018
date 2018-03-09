@@ -3,6 +3,8 @@
 
 #include "shapeitem.h"
 #include "shapeselection.h"
+#include "propeditor.h"
+#include "mainwindow.h"
 
 /*
  *
@@ -114,11 +116,12 @@ void C2DItem::CreateHighlightSelected(C2DItem *item, QPainter *painter
 }
 
 C2DItem::C2DItem(QGraphicsItem *parent)
-        : QGraphicsItem(parent), m_pen(Qt::red, 1, Qt::SolidLine), m_rectBounding()
+    : QGraphicsObject(parent) //QGraphicsItem(parent)
+        , m_pen(Qt::red, 1, Qt::SolidLine), m_rectBounding()
 {
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemIsSelectable, true);
-    //setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
+    setFlag(QGraphicsItem::ItemSendsGeometryChanges, true);
     //setFlag(QGraphicsItem::ItemClipsToShape, true);
 
     setAcceptHoverEvents(true);
@@ -165,6 +168,25 @@ QRectF C2DItem::boundingRect() const
 }
 
 
+QVariant C2DItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if(change == QGraphicsItem::ItemSelectedChange)
+    {
+        qDebug()<<"C2DItem::itemChange() change="<<change<< "select="<<value.toBool();
+        emit selectedChange(this, value.toBool());
+    }
+    else if (change == QGraphicsItem::ItemPositionChange)
+    {
+        qDebug()<<"C2DItem::itemChange() -------------  change="<<change<< "pos="<<value.toPointF();
+        emit posChange(this, value.toPointF());
+    }
+    else
+    {
+        qDebug()<<"C2DItem::itemChange() change="<<change;
+    }
+
+    return QGraphicsItem::itemChange(change, value);
+}
 
 
 
@@ -288,7 +310,10 @@ bool CShapeItem::endSelection(void)
 //  false， 不在调整中
 bool CShapeItem::trackSelection(QPoint ptView)
 {
+#if 0
     qDebug()<<"CShapeItem::trackSelection, m_pSelection"<< m_pSelection;
+#endif
+
     if(m_pSelection != 0)
     {
 
@@ -331,6 +356,7 @@ QPainterPath CShapeItem::shape() const
     return path;
 }
 
+#if 0
 void CShapeItem::hoverEnterEvent(QGraphicsSceneHoverEvent *event)
 {
     Q_UNUSED(event);
@@ -350,7 +376,7 @@ void CShapeItem::hoverLeaveEvent(QGraphicsSceneHoverEvent *event)
     qDebug()<<"hover Leave";
 
 }
-
+#endif
 
 
 
@@ -384,7 +410,7 @@ QRectF CRectItem::rect() const
     return m_rc;
 }
 
-void CRectItem::setRect(QRectF &rc)
+void CRectItem::setRect(const QRectF &rc)
 {
     prepareGeometryChange();
     m_rc = rc;
@@ -545,28 +571,15 @@ void CRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     //qDebug()<<"clipRegion= "<<painter->clipRegion();
 
 
-#if 1
-    painter->setPen(Qt::red);
+    painter->setPen(m_pen);
     QBrush brush = painter->brush();
     painter->setBrush(Qt::yellow);
+#if 1
+    painter->drawRect(m_rectBounding);
+#else
     painter->drawPath(shape());
+#endif
     painter->setBrush(brush);
-#endif
-
-#if 0
-    painter->setPen(m_pen);
-    painter->setBrush(Qt::red);
-
-    painter->drawPolygon(m_polygon);
-#endif
-
-#if 0
-    QPointF p;
-    p = pos();
-    painter->drawLine(p.x()-400, p.y(), p.x()+400, p.y());
-    painter->drawLine(p.x(), p.y() -400, p.x(), p.y()+400);
-
-#endif
 
     if (option->state & QStyle::State_Selected)
     {
@@ -588,11 +601,14 @@ int CRectItem::type() const
 void CRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
     qDebug()<<"CRectItem::mousePressEvent pos="<<event->scenePos();
+    qDebug()<<"     flags="<<flags();
     QGraphicsItem::mousePressEvent(event);
 }
 void CRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug()<<"CRectItem::mouseMoveEvent pos="<<event->scenePos();
+    qDebug()<<"CRectItem::mouseMoveEvent evtPos="<<event->scenePos() << "pos="<<pos();
+    qDebug()<<"     flags="<<flags();
+
     QGraphicsItem::mouseMoveEvent(event);
 }
 void CRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)

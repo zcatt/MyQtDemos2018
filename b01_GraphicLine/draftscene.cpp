@@ -52,11 +52,12 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
                         m_pLineItem->appendPoint(mouseEvent->scenePos());
                         m_pLineItem->appendPoint(mouseEvent->scenePos());
                         m_pLineItem->setPos(QPointF(0,0));
+                        connect(m_pLineItem, &C2DItem::selectedChange, this, &CDraftScene::itemSelected);
 
                         addItem(m_pLineItem);
+                        emit itemInserted(m_pLineItem);
                         setFocusItem(m_pLineItem);
 
-                        emit itemInserted(m_pLineItem);
                     }
                     break;
                 case CShapeItem::ShapeType_Rect:
@@ -67,9 +68,12 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
                         CRectItem *rect = new CRectItem;
                         QRectF rc(-50,-50,100,100);
                         rect->setRect(rc);
-                        rect->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
+                        //set in CRectItem. rect->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
                         //rect->setFlag(QGraphicsItem::ItemIsMovable, true);
                         //rect->setFlag(QGraphicsItem::ItemIsSelectable, true);
+                        connect(rect, &C2DItem::selectedChange, this, &CDraftScene::itemSelected);
+                        connect(rect, &C2DItem::posChange, this, &CDraftScene::posChange);
+
                         addItem(rect);
                         rect->setPos(mouseEvent->scenePos());
                         emit itemInserted(rect);
@@ -80,11 +84,13 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
                         qDebug()<<"add one textItem.";
                         bDone = true;
                         CTextItem *text = new CTextItem;
-                        text->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
+                        //text->setFlags(QGraphicsItem::ItemIsMovable | QGraphicsItem::ItemIsSelectable);
                         //rect->setFlag(QGraphicsItem::ItemIsMovable, true);
                         //rect->setFlag(QGraphicsItem::ItemIsSelectable, true);
                         text->setPos(mouseEvent->scenePos());
                         text->setText("Hello,the world.");
+                        connect(text, &C2DItem::selectedChange, this, &CDraftScene::itemSelected);
+
                         addItem(text);
                         emit itemInserted(text);
                     }
@@ -126,15 +132,16 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 
 void CDraftScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
+#if 0
     qDebug()<<"CDraftScene::mouseMoveEvent, pos="
            << mouseEvent->scenePos()
            << "actionStatus=" << m_nActionState;
-
+#endif
     bool bDone = false;
 
     if(m_nActionState == ActionState_NewLine)
     {
-        qDebug()<<"m_pLineItem=" << m_pLineItem->m_points;
+        //qDebug()<<"m_pLineItem=" << m_pLineItem->m_points;
         bDone = true;
         //QLineF newLine(m_pLineItem->point(0), mouseEvent->scenePos());
         //m_pLineItem->setLine(newLine);

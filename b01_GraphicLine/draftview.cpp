@@ -158,7 +158,7 @@ void CDraftView::mouseReleaseEvent(QMouseEvent *event)
 
 void CDraftView::mouseMoveEvent(QMouseEvent *event)
 {
-    qDebug()<< "CDraftView::mouseMoveEvent, pos="<< event->pos();
+    //qDebug()<< "CDraftView::mouseMoveEvent, pos="<< event->pos();
     mainWin->showMousePos(event->pos());
 
     //满足下述条件，则是对selectedBorder进行操作
@@ -168,7 +168,7 @@ void CDraftView::mouseMoveEvent(QMouseEvent *event)
     selectedItems = scene()->selectedItems();
     if(selectedItems.count()==1)
     {
-        qDebug()<< "CDraftView::mouseMoveEvent,    type="<< selectedItems.first()->type();
+        //qDebug()<< "CDraftView::mouseMoveEvent,    type="<< selectedItems.first()->type();
         if(selectedItems.first()->type() > C2DItem::Type_Shape)
         {
             CShapeItem *sitem;

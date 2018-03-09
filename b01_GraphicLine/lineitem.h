@@ -82,6 +82,8 @@ public:
 //
 class CLineItem : public C2DItem
 {
+    Q_OBJECT
+
 public:
     enum
     {

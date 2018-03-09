@@ -2,7 +2,7 @@
 #define SHAPEITEM_H
 
 
-#include <QGraphicsItem>
+#include <QGraphicsObject>
 #include <QLineF>
 
 class CDraftView;
@@ -17,8 +17,10 @@ template <class T> inline T cgraphicsitem_cast(QGraphicsItem *item)
 }
 
 
-class C2DItem : public QGraphicsItem
+class C2DItem : public QGraphicsObject  // public QGraphicsItem
 {
+    Q_OBJECT
+
 public:
     enum ShapeType
     {
@@ -63,6 +65,13 @@ public:
     enum { Type = Type_2D };
     int type() const override;
 
+signals:
+    void selectedChange(C2DItem *item, bool bSelected);   //当selected状态变更时触发
+    void posChange(C2DItem *item, QPointF pos);   //当selected状态变更时触发
+
+protected:
+    virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+
 public:
     QPen m_pen;
     mutable QRectF m_rectBounding;      //in item coord
@@ -71,6 +80,8 @@ public:
 
 class CShapeItem : public C2DItem
 {
+    Q_OBJECT
+
 public:
     enum
     {
@@ -131,11 +142,12 @@ public:
     enum { Type = Type_Shape };
     int type() const override;
 
-
 protected:
+#if 0
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     virtual void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
     virtual void hoverLeaveEvent(QGraphicsSceneHoverEvent *event) override;
+#endif
 
 public:
 
@@ -156,6 +168,8 @@ public:
 
 class CRectItem : public CShapeItem
 {
+    Q_OBJECT
+
 
 public:
     explicit CRectItem(QGraphicsItem *parent = Q_NULLPTR);
@@ -164,7 +178,7 @@ public:
     ~CRectItem();
 
     QRectF rect() const;
-    void setRect(QRectF &rc);
+    void setRect(const QRectF &rc);
 
     //virtual void setTrackBorder(bool bTrack, int nBHCode, QPointF ptScene) override;
     virtual void setBoundingRect(QSizeF size) override;
@@ -181,6 +195,7 @@ protected:
     virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
     virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
 
+
 public:
     QRectF m_rc;
 };
@@ -190,6 +205,8 @@ public:
 //自动计算字串的roundingRect.
 class CTextItem : public CShapeItem
 {
+    Q_OBJECT
+
 public:
     explicit CTextItem(C2DItem *parent= Q_NULLPTR);
 
@@ -211,6 +228,7 @@ public:
 
 signals:
     void textChanged(const QString &text);
+
 
 public:
     QString m_Name;

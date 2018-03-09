@@ -3,6 +3,7 @@
 #include "shapeitem.h"
 #include "draftscene.h"
 #include "draftview.h"
+#include "propeditor.h"
 
 #include "mainwindow.h"
 
@@ -30,9 +31,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     dock->setWidget(m_pToolBox);
     addDockWidget(Qt::LeftDockWidgetArea,dock);
 
+    createPropEditor();
+
+#if 1
+    connect(m_pGScene, &CDraftScene::selectionChanged, this, &MainWindow::selectionChanged);
+#else
+    connect(m_pGScene, &CDraftScene::itemSelected, m_pPropEditor, &CPropEditor::itemSelected);
+#endif
+    connect(m_pGScene, &CDraftScene::posChange, m_pPropEditor, &CPropEditor::posChange);
 
     setWindowTitle(tr("Basic Graphic Shapes"));
-
 
     mainWin = this;
 }
@@ -40,6 +48,20 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
 MainWindow::~MainWindow()
 {
     mainWin = 0;
+}
+
+void MainWindow::createPropEditor(void)
+{
+    QDockWidget *dockProp = new QDockWidget;
+    m_pPropEditor = new CPropEditor;
+#if 1
+    dockProp->setWidget(m_pPropEditor);
+#else
+    QVBoxLayout *layout = new QVBoxLayout(dockProp);
+    layout->addWidget(m_pPropEditor);
+#endif
+    dockProp->setAllowedAreas(Qt::RightDockWidgetArea | Qt::LeftDockWidgetArea);
+    addDockWidget(Qt::RightDockWidgetArea, dockProp);
 }
 
 void MainWindow::CreateToolBox(void)
@@ -225,6 +247,17 @@ void MainWindow::itemInserted(QGraphicsItem *item)
 #endif
 }
 
+void MainWindow::selectionChanged(void)
+{
+    //同步propEditor
+    QList<QGraphicsItem *> list = m_pGScene->selectedItems();
+    C2DItem *item = 0;
+    if(list.count() == 1)
+            item = dynamic_cast<C2DItem*>(list.at(0));
+    qDebug()<<"MainWindow::selectionChanged() set "<<(const void*)item;
+    m_pPropEditor->setItem(item);
+}
+
 void MainWindow::zoomIn(void)
 {
 #if 1
@@ -276,7 +309,7 @@ void MainWindow::zoomOut(void)
 void MainWindow::deleteItem(void)
 {
     foreach (QGraphicsItem *item, m_pGScene->selectedItems()) {
-        //m_pGScene->removeItem(item);
+        m_pGScene->removeItem(item);        //摘离, removeItem()会触发QGraphicsItem::ItemSceneHasChanged回调.
         delete item;
      }
 }
