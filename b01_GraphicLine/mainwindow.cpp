@@ -15,10 +15,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setCentralWidget(m_pGView);
 
     m_pGScene = new CDraftScene(this);
-    //m_pGScene->setSceneRect(QRectF(0, 0, 5000, 5000));
-    m_pGScene->setSceneRect(QRectF(0, 0, 500, 300));
+    m_pGScene->setSceneRect(QRectF(0, 0, 5000, 5000));
+    //m_pGScene->setSceneRect(QRectF(0, 0, 500, 300));
     connect(m_pGScene, &CDraftScene::itemInserted, this, &MainWindow::itemInserted);
     m_pGView->setScene(m_pGScene);
+
+    m_pGView->centerOn(0,0);
 
     CreateToolBox();
     AddShapeItems();
@@ -43,6 +45,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
     setWindowTitle(tr("Basic Graphic Shapes"));
 
     mainWin = this;
+
+    //mainWin->m_pGView->ensureVisible(QRect(),0,0);
 }
 
 MainWindow::~MainWindow()

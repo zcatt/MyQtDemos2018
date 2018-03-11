@@ -117,7 +117,10 @@ void C2DItem::CreateHighlightSelected(C2DItem *item, QPainter *painter
 
 C2DItem::C2DItem(QGraphicsItem *parent)
     : QGraphicsObject(parent) //QGraphicsItem(parent)
-        , m_pen(Qt::red, 1, Qt::SolidLine), m_rectBounding()
+        , m_nItemFlag(0)
+        , m_pen(Qt::darkRed, 1, Qt::SolidLine)
+        , m_brush(Qt::yellow)
+        , m_rectBounding()
 {
     setFlag(QGraphicsItem::ItemIsMovable, true);
     setFlag(QGraphicsItem::ItemIsSelectable, true);
@@ -132,6 +135,23 @@ int C2DItem::type() const
     return Type;
 }
 
+C2DItem::ItemFlags C2DItem::itemFlags() const
+{
+    return ItemFlags(m_nItemFlag);
+}
+
+void C2DItem::setItemFlag(ItemFlag flag, bool enabled)
+{
+    if(enabled)
+        m_nItemFlag |= flag;
+    else
+        m_nItemFlag &= ~flag;
+}
+
+void C2DItem::setItemFlags(ItemFlags flags)
+{
+    m_nItemFlag = flags;
+}
 
 
 QPen C2DItem::pen() const
@@ -139,6 +159,38 @@ QPen C2DItem::pen() const
     return m_pen;
 }
 
+QBrush C2DItem::brush(void)
+{
+    return m_brush;
+}
+
+void C2DItem::setBrush(const QBrush& brush)
+{
+    m_brush = brush;
+    update();
+}
+
+//在view coord中item的boundingRect
+QRect C2DItem::viewBoundingRect(QGraphicsView *view)
+{
+    Q_ASSERT(view->scene() == scene());
+
+    QRect rcBoundingInView;
+    QSize size;
+    rcBoundingInView = view->mapFromScene(sceneBoundingRect()).boundingRect();
+
+#if 0
+    if (rcBoundingInView.width() < C2DItem::SelectBorderThickness)
+        size.rwidth() = C2DItem::SelectBorderThickness;
+    if (rcBoundingInView.height() < C2DItem::SelectBorderThickness)
+        size.rheight() = C2DItem::SelectBorderThickness;
+
+    if(!size.isNull())
+        rcBoundingInView.setSize(size);
+#endif
+
+    return rcBoundingInView;
+}
 
 bool C2DItem::contains(const QPointF &point) const
 {
@@ -172,17 +224,17 @@ QVariant C2DItem::itemChange(GraphicsItemChange change, const QVariant &value)
 {
     if(change == QGraphicsItem::ItemSelectedChange)
     {
-        qDebug()<<"C2DItem::itemChange() change="<<change<< "select="<<value.toBool();
+        qDebug()<<"change="<<change<< "select="<<value.toBool();
         emit selectedChange(this, value.toBool());
     }
     else if (change == QGraphicsItem::ItemPositionChange)
     {
-        qDebug()<<"C2DItem::itemChange() -------------  change="<<change<< "pos="<<value.toPointF();
+        qDebug()<<"-------------  change="<<change<< "pos="<<value.toPointF();
         emit posChange(this, value.toPointF());
     }
     else
     {
-        qDebug()<<"C2DItem::itemChange() change="<<change;
+        qDebug()<<"change="<<change;
     }
 
     return QGraphicsItem::itemChange(change, value);
@@ -198,9 +250,13 @@ QVariant C2DItem::itemChange(GraphicsItemChange change, const QVariant &value)
 
 
 CShapeItem::CShapeItem(QGraphicsItem *parent)        
-        : C2DItem(parent), m_nShapeItemFlag(0), m_sizeMin(SelectBorderThickness*3 +2, SelectBorderThickness*3 +2)
+        : C2DItem(parent)
+            , m_nShapeItemFlag(0)
+            , m_sizeMin(SelectBorderThickness*3 +2, SelectBorderThickness*3 +2)
             , m_pSelection(Q_NULLPTR)
+#if 0
             , m_bTrackingBorder(false), m_nBorderHandleCode(BHC_0), m_ptPressed(), m_ptTrackPos(), m_rcPressed()
+#endif
 {
 }
 
@@ -285,7 +341,7 @@ bool CShapeItem::beginSelection(CDraftView *pView, QPoint ptView)
         m_pSelection = 0;
     }
 
-    qDebug()<<"CShapeItem::beginSelection ------------- OK="<<bOk;
+    qDebug()<<"beginSelection ------------- OK="<<bOk;
     return bOk;
 }
 
@@ -311,7 +367,7 @@ bool CShapeItem::endSelection(void)
 bool CShapeItem::trackSelection(QPoint ptView)
 {
 #if 0
-    qDebug()<<"CShapeItem::trackSelection, m_pSelection"<< m_pSelection;
+    qDebug()<<"m_pSelection"<< m_pSelection;
 #endif
 
     if(m_pSelection != 0)
@@ -325,26 +381,9 @@ bool CShapeItem::trackSelection(QPoint ptView)
 
 
 
-
-
-
-
-
-
 bool CShapeItem::isTrackingBorder(void)
 {
-    return m_bTrackingBorder;
-}
-
-//在view coord中item的boundingRect
-QRect CShapeItem::viewBoundingRect(QGraphicsView *view)
-{
-    Q_ASSERT(view->scene() == scene());
-
-    QRect rcBoundingInView;
-    rcBoundingInView = view->mapFromScene(sceneBoundingRect()).boundingRect();
-
-    return rcBoundingInView;
+    return (m_pSelection != 0);
 }
 
 
@@ -425,22 +464,9 @@ QRectF CRectItem::boundingRect() const
 {
     if(m_rectBounding.isNull())
     {
-#if 1
         m_rectBounding = shape().controlPointRect();
         m_rectBounding.adjust(-CShapeItem::SelectBorderThickness, -CShapeItem::SelectBorderThickness
                               ,CShapeItem::SelectBorderThickness, CShapeItem::SelectBorderThickness);
-        //m_rectBounding.adjust(-100,-100,100,100);
-#else
-        qreal pw = (m_pen.style() == Qt::NoPen) ? qreal(0) : pen().widthF();
-        if (pw == 0.0)
-        {
-            m_rectBounding = m_polygon.boundingRect();
-        }
-        else
-        {
-            m_rectBounding = shape().controlPointRect();
-        }
-#endif
     }
 
     return m_rectBounding;
@@ -492,75 +518,9 @@ void CRectItem::updateBoundingRect(void)
     if (thickness > 0.0)
         m_rectBounding.adjust(-thickness, -thickness, thickness, thickness);
 
-    qDebug()<< "updateBoundingRect(), boundingRect="<< m_rectBounding;
+    qDebug()<< "boundingRect="<< m_rectBounding;
 }
 
-#if 0
-void CRectItem::drawSelectBorder(QPainter *painter, QRectF rect)
-{
-    painter->save();
-
-    //border
-
-    QBrush br(Qt::black, Qt::Dense4Pattern);
-    QPen pen;
-    pen.setBrush(br);
-    pen.setWidth(SelectBorderThickness);
-
-    painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
-
-    QRectF r = rect;
-    qreal delta = SelectBorderThickness/2.0;
-    r.adjust(delta, delta, -delta, -delta);
-
-    painter->drawRect(r);
-
-    //8 rect
-    painter->setPen(Qt::SolidLine);
-    painter->setBrush(QBrush(Qt::white,Qt::SolidPattern));
-
-    QRectF handleRect(0,0, SelectBorderThickness, SelectBorderThickness);
-
-    qreal top,bottom,left,right;
-    top = rect.top();  bottom = rect.bottom();
-    left = rect.left(); right = rect.right();
-
-
-    handleRect.moveTo(left, top);
-    painter->drawRect(handleRect);
-
-    handleRect.moveTo(right - SelectBorderThickness, top);
-    painter->drawRect(handleRect);
-
-    handleRect.moveTo(left, bottom -SelectBorderThickness);
-    painter->drawRect(handleRect);
-
-    handleRect.moveTo(right - SelectBorderThickness, bottom - SelectBorderThickness);
-    painter->drawRect(handleRect);
-
-    qreal center;
-    center = (rect.left() + rect.right() - SelectBorderThickness)/2.0;
-
-    handleRect.moveTo(center, top);
-    painter->drawRect(handleRect);
-
-    handleRect.moveTo(center, bottom - SelectBorderThickness);
-    painter->drawRect(handleRect);
-
-    center = (rect.top() + rect.bottom() - SelectBorderThickness)/2.0;
-
-    handleRect.moveTo(left, center);
-    painter->drawRect(handleRect);
-
-    handleRect.moveTo(right - SelectBorderThickness, center);
-    painter->drawRect(handleRect);
-
-
-
-    painter->restore();
-}
-#endif
 
 void CRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
@@ -571,15 +531,16 @@ void CRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     //qDebug()<<"clipRegion= "<<painter->clipRegion();
 
 
-    painter->setPen(m_pen);
+    QPen pen = painter->pen();
     QBrush brush = painter->brush();
-    painter->setBrush(Qt::yellow);
+
+    painter->setPen(m_pen);
+    painter->setBrush(m_brush);
 #if 1
     painter->drawRect(m_rectBounding);
 #else
     painter->drawPath(shape());
 #endif
-    painter->setBrush(brush);
 
     if (option->state & QStyle::State_Selected)
     {
@@ -590,6 +551,8 @@ void CRectItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
 #endif
     }
 
+    painter->setBrush(brush);
+    painter->setPen(pen);
 }
 
 int CRectItem::type() const
@@ -600,20 +563,20 @@ int CRectItem::type() const
 
 void CRectItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug()<<"CRectItem::mousePressEvent pos="<<event->scenePos();
+    qDebug()<<"pos="<<event->scenePos();
     qDebug()<<"     flags="<<flags();
     QGraphicsItem::mousePressEvent(event);
 }
 void CRectItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug()<<"CRectItem::mouseMoveEvent evtPos="<<event->scenePos() << "pos="<<pos();
+    qDebug()<<"evtPos="<<event->scenePos() << "pos="<<pos();
     qDebug()<<"     flags="<<flags();
 
     QGraphicsItem::mouseMoveEvent(event);
 }
 void CRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
-    qDebug()<<"CRectItem::mouseReleaseEvent pos="<<event->scenePos();
+    qDebug()<<"pos="<<event->scenePos();
     QGraphicsItem::mouseReleaseEvent(event);
 }
 

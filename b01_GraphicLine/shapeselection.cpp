@@ -110,7 +110,7 @@ bool CShapeSelection::beginTracking(CDraftView *pView, QPoint ptView)
 
     if(m_pOwner->shapeItemFlags() & (CShapeItem::NotSelectBorder | CShapeItem::NotSizable))
     {
-        qDebug()<<"pass beginTracking";
+        qDebug()<<"pass ";
         return false;
     }
 
@@ -134,12 +134,12 @@ bool CShapeSelection::beginTracking(CDraftView *pView, QPoint ptView)
         //m_bSetBorderCursor = true;
         m_pView->setCursor(borderCursor(nPosCode));
 
-        m_nBorderHandleCode = posCode(ptView);
+        m_nBorderHandleCode = nPosCode;
         m_ptPressed = m_pView->mapToScene(ptView);
         m_ptTrackPos = m_pOwner->pos();
         m_rcPressed = m_pOwner->boundingRect();
 
-        qDebug()<<"CShapeSelection::beginTracking";
+        qDebug()<<" ";
         return true;
     }
     return false;
@@ -160,7 +160,7 @@ void CShapeSelection::track(QPoint ptView)
     qDebug()<<"---------------track ptView="<<ptView;
     if(m_nBorderHandleCode == CShapeItem::BHC_0 || (m_pOwner->shapeItemFlags()&CShapeItem::NotSizable))
     {
-        qDebug()<<"CShapeSelection::track  pass";
+        qDebug()<<"pass";
         return;
     }
 
@@ -350,7 +350,7 @@ void CShapeSelection::drawSelection(QPainter *viewPainter, const QRectF &rectSce
     //没有selection border
     if(m_pOwner->shapeItemFlags() &(CShapeItem::NotSelectBorder))
     {
-        qDebug()<<"pass CShapeSelection::drawSelection";
+        qDebug()<<"pass";
         return;
     }
 

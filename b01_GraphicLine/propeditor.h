@@ -5,6 +5,9 @@
 
 class QtProperty;
 class QtTreePropertyBrowser;
+
+class QtGroupPropertyManager;
+class QtEnumPropertyManager;
 class QtDoublePropertyManager;
 class QtStringPropertyManager;
 class QtColorPropertyManager;
@@ -28,6 +31,7 @@ public slots:
     void posChange(C2DItem *item, QPointF pos);
 
 private slots:
+    void valueChanged(QtProperty *property, int value);
     void valueChanged(QtProperty *property, double value);
     void valueChanged(QtProperty *property, const QString &value);
     void valueChanged(QtProperty *property, const QColor &value);
@@ -44,6 +48,9 @@ public:
     C2DItem *m_pItem;
 
     QtTreePropertyBrowser *m_pTreeBrowser;
+
+    QtGroupPropertyManager *m_pGroupManager;
+    QtEnumPropertyManager *m_pEnumManager;
     QtDoublePropertyManager *m_pDoubleManager;
     QtStringPropertyManager *m_pStringManager;
     QtColorPropertyManager *m_pColorManager;

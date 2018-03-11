@@ -27,6 +27,7 @@ public:
 
         EndShape_Custom,
     };
+
     enum
     {
         EndShapeWidth = 15,     //终端图形应当约束在width*width矩形内
@@ -37,6 +38,8 @@ public:
     CEndpoint(EndShape nEndShape = EndShape_None, C2DItem *pOwner = 0);
 
     void setOwner(C2DItem *pOwner);
+
+    EndShape endShape(void);
     void setEndShape(EndShape nEndShape);
 
     CTextItem *nameItem(void);
@@ -85,6 +88,15 @@ class CLineItem : public C2DItem
     Q_OBJECT
 
 public:
+    enum LineHandleCode
+    {
+        LHC_0,      //无效
+        LHC_MidHandle,      //中间的节点handle
+        LHC_EndHandle,      //首尾的端点节点handle
+        LHC_NewHandle,      //新增handle，即点中line，但不在节点上,需要新增一个handle
+        //LHC_CtrlPointHandle,  //曲线的控制点handle.
+    };
+
     enum
     {
         OutlineSpace = 10,      //轮廓到line的留白距离
@@ -105,6 +117,7 @@ public:
 
     void setName(const QString& name);
     void setDesc(const QString& desc);
+    CEndpoint& endPoint(int nIndex);
 
     QPointF calcTextBasePos(void);
     QPointF calcNamePos(void);
@@ -113,19 +126,28 @@ public:
 
     int pointCount(void) const;
     QPointF point(int index) const;
-    void setPoint(int index, const QPointF &ptScene);
-    void setLastPoint(const QPointF &ptScene);
+    void setPoint(int index, const QPointF &ptParent);
+    void setLastPoint(const QPointF &ptParent);
 
-    void appendPoint(const QPointF &ptScene);
-    void insertPoint(int index, const QPointF &ptScene);
+    void appendPoint(const QPointF &ptParent);
+    void insertPoint(int index, const QPointF &ptParent);
     void removePoint(int index);
 
     void updateEndpoints(int index = -1);
+    void updateNameDesc(int index = -1);
 
     QLineF line() const;
     void setLine(const QLineF &line);
     inline void setLine(qreal x1, qreal y1, qreal x2, qreal y2)
                 { setLine(QLineF(x1, y1, x2, y2)); }
+
+
+
+    bool isTrackingBorder(void);
+    CLineSelection* getSelection(void);
+    bool beginSelection(CDraftView *pView, QPoint ptView);
+    bool endSelection(void);
+    bool trackSelection(QPoint ptView);
 
 
     virtual void setPen(const QPen &pen) override;
@@ -146,7 +168,7 @@ protected:
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 public:
-    CLineSelection *m_pLineSelection;
+    CLineSelection *m_pSelection;
     QVector<QPointF> m_points;  //in item coord.
 
     CTextItem *m_pNameItem;
@@ -162,8 +184,44 @@ public:
 
 
 //CLineItem选中时的装饰
+//负责处理CShapeItem obj的焦点外框，以及8个handle的交互
+//需求包括
+//.在QGraphicsView中绘制，以保证大小与scene的缩放比例无关
+//.8个handle的拖拽
+//.支持大小不可调整情况
 class CLineSelection
 {
+public:
+    static Qt::CursorShape handleCursor(CLineItem::LineHandleCode nLHCode);
+
+    CLineSelection(CLineItem *owner, CDraftView *view = 0);
+    QPointF mapSceneToParent(QPointF ptScene);
+    QPointF mapParentToScene(QPointF ptParent);
+
+    CLineItem::LineHandleCode posCode(QPoint ptView, int& nIndex);
+
+
+    bool beginTracking(CDraftView *pView, QPoint ptView);
+    void endTracking(void);
+    //bool isInTracking(void);
+    void track(QPoint ptView);
+
+    void draw(QPainter *viewPainter);
+    void drawSelection(QPainter *viewPainter, const QRectF &rectScene);
+
+
+
+public:
+    CLineItem *m_pOwner;
+    CDraftView *m_pView;
+
+    //以下变量用于实现handle框
+    //bool m_bTracking;    //true, 如果鼠标已经点压边框的8个handle，进入resize模式
+    CLineItem::LineHandleCode m_nLHCode;    //m_bTrackingBorder为真时，点压的handle的BorderHandleCode
+    QPointF m_ptPressed;   //点压时的位置, in parent coord
+    QPointF m_ptTrackPos;   //点压时鼠标的位置, in parent coord
+    //QRectF m_rcPressed;    //点压时的bounding rect, in parent coord
+    int m_nIndex;           //点压时的handle index
 
 };
 

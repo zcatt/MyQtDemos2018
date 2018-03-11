@@ -30,7 +30,7 @@ void CDraftScene::resetActionState(void)
 
 void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    qDebug()<< "CDraftScene::mousePressEvent, shapeType= "<<m_pMainWindow->GetCurrentShapeType();
+    qDebug()<< "shapeType= "<<m_pMainWindow->GetCurrentShapeType();
 
     bool bDone = false;
 
@@ -133,7 +133,7 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 void CDraftScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
 #if 0
-    qDebug()<<"CDraftScene::mouseMoveEvent, pos="
+    qDebug()<<"pos="
            << mouseEvent->scenePos()
            << "actionStatus=" << m_nActionState;
 #endif
@@ -156,7 +156,7 @@ void CDraftScene::mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent)
 
 void CDraftScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    qDebug()<<"CDraftScene::mouseReleaseEvent, pos="
+    qDebug()<<"pos="
            << mouseEvent->scenePos()
            << "actionStatus=" << m_nActionState;
 
@@ -177,7 +177,7 @@ void CDraftScene::mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent)
 
 void CDraftScene::mouseDoubleClickEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
-    qDebug()<<"CDraftScene::mouseDoubleClickEvent, pos="
+    qDebug()<<"pos="
            << mouseEvent->scenePos()
            << "actionStatus=" << m_nActionState;
 

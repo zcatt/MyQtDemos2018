@@ -44,6 +44,20 @@ public:
         Type_Text,
     };
 
+    enum ItemFlag
+    {
+        NotSelectBorder = 0x01, //选中时不支持显示选中边框(和8个handles)， depend on GraphicsItemFlag::ItemIsSelectable
+        NotSizable = 0x02,      //选中边框不支持显示8个handles，不支持大小调整, depend on SelectBorder
+    };
+
+    enum
+    {
+        SelectBorderThickness = 10,     //选中提示边框的厚度， in QGraphicsView coord
+    };
+
+    Q_DECLARE_FLAGS(ItemFlags, ItemFlag)
+
+
 public:
     static QPainterPath CreateLineOutlineFromPath(const QPainterPath &path, const QPen &pen);
     static QPainterPath CreateShapeOutlineFromPath(const QPainterPath &path, const QPen &pen);
@@ -52,8 +66,18 @@ public:
 
     C2DItem(QGraphicsItem *parent = Q_NULLPTR);
 
+    ItemFlags itemFlags() const;
+    void setItemFlag(ItemFlag flag, bool enabled = true);
+    void setItemFlags(ItemFlags flags);
+
     QPen pen() const;
     virtual void setPen(const QPen &pen) = 0;
+
+    QBrush brush(void);
+    void setBrush(const QBrush& brush);
+
+    QRect viewBoundingRect(QGraphicsView *view);
+
 
     bool contains(const QPointF &point) const override;
     bool isObscuredBy(const QGraphicsItem *item) const override;
@@ -73,7 +97,10 @@ protected:
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
 
 public:
+    quint32 m_nItemFlag;
+
     QPen m_pen;
+    QBrush m_brush;
     mutable QRectF m_rectBounding;      //in item coord
 };
 
@@ -83,11 +110,6 @@ class CShapeItem : public C2DItem
     Q_OBJECT
 
 public:
-    enum
-    {
-        SelectBorderThickness = 6,     //选中提示边框的厚度， in QGraphicsView coord
-    };
-
     enum BoarderHandleCode
     {
         BHC_0,      //无效
@@ -117,7 +139,6 @@ public:
     ShapeItemFlags shapeItemFlags() const;
     void setShapeItemFlag(ShapeItemFlag flag, bool enabled = true);
     void setShapeItemFlags(ShapeItemFlags flags);
-    bool isTrackingBorder(void);
 
     virtual void setPen(const QPen &pen) override;
 
@@ -125,13 +146,13 @@ public:
     QSizeF minimalSize(void) const;
 
 
+    bool isTrackingBorder(void);
     CShapeSelection* getSelection(void);
     bool beginSelection(CDraftView *pView, QPoint ptView);
     bool endSelection(void);
     bool trackSelection(QPoint ptView);
 
 
-    QRect viewBoundingRect(QGraphicsView *view);
 
     //size是新的boudingRect的实际大小，不含pen width.
     virtual void setBoundingRect(QSizeF size) = 0;
@@ -156,13 +177,15 @@ public:
 
 
     CShapeSelection *m_pSelection;
-
+#if 0
     //以下变量用于实现handle框
     bool m_bTrackingBorder;    //true, 如果鼠标已经点压边框的8个handle，进入resize模式
     int m_nBorderHandleCode;    //m_bTrackingBorder为真时，点压的handle的BorderHandleCode
     QPointF m_ptPressed;   //点压时的位置, in scene coord
     QPointF m_ptTrackPos;   //当前鼠标的位置, in parent coord
     QRectF m_rcPressed;    //点压时的bounding rect, in item coord
+#endif
+
 };
 
 

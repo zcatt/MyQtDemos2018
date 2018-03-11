@@ -7,7 +7,8 @@
 CPropEditor::CPropEditor(QWidget *parent) : QWidget(parent)
                     , m_propertyToId(), m_idToProperty()
 {
-
+    m_pGroupManager = new QtGroupPropertyManager(this);
+    m_pEnumManager = new QtEnumPropertyManager(this);
     m_pDoubleManager = new QtDoublePropertyManager(this);
     m_pStringManager = new QtStringPropertyManager(this);
     m_pColorManager = new QtColorPropertyManager(this);
@@ -17,6 +18,8 @@ CPropEditor::CPropEditor(QWidget *parent) : QWidget(parent)
     m_pRectfManager = new QtRectFPropertyManager(this);
 
 
+    connect(m_pEnumManager, &QtEnumPropertyManager::valueChanged,
+                this,  static_cast<void (CPropEditor::*)(QtProperty *, int)>(&CPropEditor::valueChanged));
     connect(m_pDoubleManager, &QtDoublePropertyManager::valueChanged,
                 this,  static_cast<void (CPropEditor::*)(QtProperty *, double)>(&CPropEditor::valueChanged));
     connect(m_pStringManager, &QtStringPropertyManager::valueChanged,
@@ -32,7 +35,6 @@ CPropEditor::CPropEditor(QWidget *parent) : QWidget(parent)
     connect(m_pRectfManager, &QtRectFPropertyManager::valueChanged,
                 this, static_cast<void (CPropEditor::*)(QtProperty *, const QRectF&)>(&CPropEditor::valueChanged));
 
-
     QtDoubleSpinBoxFactory *doubleSpinBoxFactory = new QtDoubleSpinBoxFactory(this);
     QtCheckBoxFactory *checkBoxFactory = new QtCheckBoxFactory(this);
     QtSpinBoxFactory *spinBoxFactory = new QtSpinBoxFactory(this);
@@ -44,6 +46,7 @@ CPropEditor::CPropEditor(QWidget *parent) : QWidget(parent)
     m_pTreeBrowser->setResizeMode(QtTreePropertyBrowser::Interactive);
     m_pTreeBrowser->setAlternatingRowColors(true);
 
+    m_pTreeBrowser->setFactoryForManager(m_pEnumManager, comboBoxFactory);
     m_pTreeBrowser->setFactoryForManager(m_pDoubleManager, doubleSpinBoxFactory);
     m_pTreeBrowser->setFactoryForManager(m_pStringManager, lineEditFactory);
     m_pTreeBrowser->setFactoryForManager(m_pColorManager->subIntPropertyManager(), spinBoxFactory);
@@ -64,9 +67,20 @@ CPropEditor::CPropEditor(QWidget *parent) : QWidget(parent)
 
 }
 
+//property加入到QtTreePropertyBrowser中，并建立prop <--> id的索引map
+//
+void CPropEditor::addProperty(QtProperty *property, const QString &id)
+{
+    Q_ASSERT(m_pItem);
+
+    m_propertyToId[property] = id;
+    m_idToProperty[id] = property;
+    m_pTreeBrowser->addProperty(property);
+}
+
 void CPropEditor::setItem(C2DItem *item)
 {
-    qDebug()<<"CPropEditor::setItem  item=" << (const void*)item;
+    qDebug()<<"item=" << (const void*)item;
 
     //clear previous item.
     QMap<QtProperty *, QString>::ConstIterator itProp = m_propertyToId.constBegin();
@@ -90,8 +104,72 @@ void CPropEditor::setItem(C2DItem *item)
 
     if(item->type() == C2DItem::Type_Line)
     {
-        //TODO
+        CLineItem *lineItem = qobject_cast<CLineItem*>(item);
+        Q_ASSERT(lineItem != 0);
 
+        QtProperty *shapeProp;
+        QtProperty *nameProp;
+        QtProperty *descProp;
+
+        QStringList enumNames;
+        QMap<int, QIcon> enumIcons;
+
+        prop = m_pGroupManager->addProperty(tr("End1"));
+
+        shapeProp = m_pEnumManager->addProperty(tr("Shape"));
+        enumNames << "None"
+                  << "Arrow"
+                  << "Hollow Circle" << "SolidCircle"
+                  << "Hollow Triangle" <<"Solid Triangle"
+                  << "Hollow Diamond" << "Solid Diamond"
+                  << "Custom";
+        m_pEnumManager->setEnumNames(shapeProp, enumNames);
+        enumIcons[0] = QIcon(":/images/emotion1.png");
+        enumIcons[1] = QIcon(":/images/emotion2.png");
+        enumIcons[2] = QIcon(":/images/emotion3.png");
+        enumIcons[3] = QIcon(":/images/emotion4.png");
+        enumIcons[5] = QIcon(":/images/emotion1.png");
+        enumIcons[6] = QIcon(":/images/emotion2.png");
+        enumIcons[7] = QIcon(":/images/emotion3.png");
+        enumIcons[8] = QIcon(":/images/emotion4.png");
+        enumIcons[9] = QIcon(":/images/emotion1.png");
+        m_pEnumManager->setEnumIcons(shapeProp, enumIcons);
+        m_pEnumManager->setValue(shapeProp, lineItem->endPoint(0).endShape());
+        prop->addSubProperty(shapeProp);
+
+        m_propertyToId[shapeProp] = QLatin1String("endShape1");
+        m_idToProperty[QLatin1String("endShap1")] = shapeProp;
+        addProperty(prop, QLatin1String("end1"));
+        //m_pTreeBrowser->addProperty(prop);
+
+        prop = m_pGroupManager->addProperty(tr("End2"));
+        shapeProp = m_pEnumManager->addProperty(tr("Shape"));
+        enumNames.clear();
+        enumNames << "None"
+                  << "Arrow"
+                  << "Hollow Circle" << "SolidCircle"
+                  << "Hollow Triangle" <<"Solid Triangle"
+                  << "Hollow Diamond" << "Solid Diamond"
+                  << "Custom";
+        m_pEnumManager->setEnumNames(shapeProp, enumNames);
+        enumIcons.clear();
+        enumIcons[0] = QIcon(":/images/emotion1.png");
+        enumIcons[1] = QIcon(":/images/emotion2.png");
+        enumIcons[2] = QIcon(":/images/emotion3.png");
+        enumIcons[3] = QIcon(":/images/emotion4.png");
+        enumIcons[5] = QIcon(":/images/emotion5.png");
+        enumIcons[6] = QIcon(":/images/emotion6.png");
+        enumIcons[7] = QIcon(":/images/emotion7.png");
+        enumIcons[8] = QIcon(":/images/emotion8.png");
+        enumIcons[9] = QIcon(":/images/emotion9.png");
+        m_pEnumManager->setEnumIcons(shapeProp, enumIcons);
+        m_pEnumManager->setValue(shapeProp, lineItem->endPoint(0).endShape());
+        prop->addSubProperty(shapeProp);
+
+        m_propertyToId[shapeProp] = QLatin1String("endShape2");
+        m_idToProperty[QLatin1String("endShap2")] = shapeProp;
+        addProperty(prop, QLatin1String("end2"));
+        //m_pTreeBrowser->addProperty(prop);
     }
     else if (item->type() == C2DItem::Type_Text)
     {
@@ -102,10 +180,7 @@ void CPropEditor::setItem(C2DItem *item)
         CRectItem *rcItem = qobject_cast<CRectItem*>(item);
         Q_ASSERT(rcItem != 0);
 
-        prop = m_pColorManager->addProperty(tr("Pen Color"));
-        m_pColorManager->setValue(prop, rcItem->pen().color());
-        addProperty(prop, QLatin1String("penColor"));
-
+        //rect
         QRectF rect = rcItem->rect();
         rect.translate(rcItem->pos());
 
@@ -113,19 +188,30 @@ void CPropEditor::setItem(C2DItem *item)
         m_pRectfManager->setValue(prop, rect);
         addProperty(prop, QLatin1String("rect"));
     }
+
+
+    //pen color
+    prop = m_pColorManager->addProperty(tr("Pen Color"));
+    m_pColorManager->setValue(prop, item->pen().color());
+    addProperty(prop, QLatin1String("penColor"));
+
+    //brush color
+    prop = m_pColorManager->addProperty(tr("Brush Color"));
+    m_pColorManager->setValue(prop, item->brush().color());
+    addProperty(prop, QLatin1String("brushColor"));
 }
 
 
 void CPropEditor::itemSelected(C2DItem *item, bool bSelected)
 {
-    qDebug()<<"CPropEditor::itemSelected()  item="<<(const void*)item;
+    qDebug()<<"item="<<(const void*)item;
 
     setItem(bSelected ? item : 0);
 }
 
 void CPropEditor::posChange(C2DItem *item, QPointF pos)
 {
-    qDebug()<<"CPropEditor::posChange()  item="<<(const void*)item;
+    qDebug()<<"item="<<(const void*)item;
     if(item != m_pItem)
         return;
 
@@ -151,17 +237,42 @@ void CPropEditor::posChange(C2DItem *item, QPointF pos)
     }
 }
 
-//property加入到QtTreePropertyBrowser中，并建立prop <--> id的索引map
-//
-void CPropEditor::addProperty(QtProperty *property, const QString &id)
+
+void CPropEditor::valueChanged(QtProperty *property, int value)
 {
-    Q_ASSERT(m_pItem);
+    if(!m_propertyToId.contains(property))
+        return;
+    if(!m_pItem)
+        return;
 
-    m_propertyToId[property] = id;
-    m_idToProperty[id] = property;
-    m_pTreeBrowser->addProperty(property);
+    QString id = m_propertyToId[property];
+
+    //TODO, 此部分应当分散到各C2DItem类中实现，或者集中到专门类中
+    if(m_pItem->type() == C2DItem::Type_Line)
+    {
+        CLineItem *lineItem = qobject_cast<CLineItem*>(m_pItem);
+
+        if(id == QLatin1String("endShape1"))
+        {
+            CEndpoint& endpoint = lineItem->endPoint(0);
+            endpoint.setEndShape(static_cast<CEndpoint::EndShape>(value));
+        }
+        else if(id == QLatin1String("endShape2"))
+        {
+            CEndpoint& endpoint = lineItem->endPoint(1);
+            endpoint.setEndShape(static_cast<CEndpoint::EndShape>(value));
+        }
+    }
+    else if (m_pItem->type() == C2DItem::Type_Text)
+    {
+        //TODO
+    }
+    else if (m_pItem->type() == C2DItem::Type_Rect)
+    {
+        //TODO
+    }
+
 }
-
 
 void CPropEditor::valueChanged(QtProperty *property, double value)
 {
@@ -185,6 +296,7 @@ void CPropEditor::valueChanged(QtProperty *property, double value)
 
 void CPropEditor::valueChanged(QtProperty *property, const QString &value)
 {
+
     Q_ASSERT(m_pItem);
 
     //TODO, 此部分应当分散到各C2DItem类中实现，或者集中到专门类中
@@ -213,10 +325,10 @@ void CPropEditor::valueChanged(QtProperty *property, const QColor &value)
         return;
 
     QString id = m_propertyToId[property];
+#if 0
 
     if(m_pItem->type() == C2DItem::Type_Line)
     {
-        //TODO
 
     }
     else if (m_pItem->type() == C2DItem::Type_Text)
@@ -225,16 +337,21 @@ void CPropEditor::valueChanged(QtProperty *property, const QColor &value)
     }
     else if (m_pItem->type() == C2DItem::Type_Rect)
     {
-        if(id == QLatin1String("penColor"))
-        {
-            CRectItem *rcItem = qgraphicsitem_cast<CRectItem*>(m_pItem);
-
-            QPen pen = rcItem->pen();
-            pen.setColor(value);
-            rcItem->setPen(pen);
-        }
     }
+#endif
 
+    if(id == QLatin1String("penColor"))
+    {
+        QPen pen = m_pItem->pen();
+        pen.setColor(value);
+        m_pItem->setPen(pen);
+    }
+    else if(id == QLatin1String("brushColor"))
+    {
+        QBrush brush = m_pItem->brush();
+        brush.setColor(value);
+        m_pItem->setBrush(brush);
+    }
 }
 
 void CPropEditor::valueChanged(QtProperty *property, const QFont &value)
