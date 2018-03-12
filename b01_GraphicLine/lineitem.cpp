@@ -44,6 +44,13 @@ CLineItem::~CLineItem()
     delete m_pEndpoint[1];
     m_pEndpoint[1] = 0;
 #endif
+    if(m_pSelection != 0)
+        delete m_pSelection;
+}
+
+int CLineItem::type() const
+{
+    return Type;
 }
 
 QPointF CLineItem::calcTextBasePos(void)
@@ -193,12 +200,16 @@ CEndpoint& CLineItem::endPoint(int nIndex)
 }
 
 
-
 //return
 //  0,   不在调整大小和位置模式
-CLineSelection* CLineItem::getSelection(void)
+C2DSelection* CLineItem::getSelection(void)
 {
     return m_pSelection;
+}
+
+bool CLineItem::isTrackingSelection(void)
+{
+    return (m_pSelection!=0 && m_pSelection->isInTracking());
 }
 
 //鼠标在CDraftView中点中handle，进入拖拽调整大小和位置模式。
@@ -209,18 +220,27 @@ CLineSelection* CLineItem::getSelection(void)
 //  true,         进入调整大小模式.
 //  false,            条件不具备，不进入调整大小模式.
 //
-bool CLineItem::beginSelection(CDraftView *pView, QPoint ptView)
+bool CLineItem::beginSelection(CDraftView *pView, QMouseEvent *mouseView)
 {
-    Q_ASSERT(m_pSelection == 0);
+    Q_ASSERT(pView != 0);
 
-    m_pSelection = new CLineSelection(this);
-    bool bOk = m_pSelection->beginTracking(pView, ptView);
+    if(m_pSelection == 0)
+    {
+        m_pSelection = new CLineSelection(this, pView);
+    }
 
+    Q_ASSERT(m_pSelection->view() == pView);
+    Q_ASSERT(!m_pSelection->isInTracking());
+
+    bool bOk = m_pSelection->beginTracking(mouseView);
+
+#if 0
     if(!bOk)
     {
         delete m_pSelection;
         m_pSelection = 0;
     }
+#endif
 
     qDebug()<<"beginSelection ------------- OK="<<bOk;
     return bOk;
@@ -232,40 +252,37 @@ bool CLineItem::beginSelection(CDraftView *pView, QPoint ptView)
 //  false, no selection
 bool CLineItem::endSelection(void)
 {
+    bool bRes = false;
     if(m_pSelection!=0)
     {
-        m_pSelection->endTracking();
+        bRes = m_pSelection->endTracking();
+#if 0
         delete m_pSelection;
         m_pSelection = 0;
-        return true;
+#endif
     }
-    return false;
+    return bRes;
 }
 
 //return
 //  true,  在调整中
 //  false， 不在调整中
-bool CLineItem::trackSelection(QPoint ptView)
+bool CLineItem::trackSelection(QMouseEvent *mouseView)
 {
 #if 1
     qDebug()<<"m_pSelection"<< m_pSelection;
 #endif
+    bool bRes = false;
 
     if(m_pSelection != 0)
     {
-
-        m_pSelection->track(ptView);
-        return true;
+        bRes = m_pSelection->track(mouseView);
     }
-    return false;
+    return bRes;
 }
 
 
 
-bool CLineItem::isTrackingBorder(void)
-{
-    return (m_pSelection!=0);
-}
 
 
 void CLineItem::setPen(const QPen &pen)
@@ -321,7 +338,7 @@ QPainterPath CLineItem::shape() const
     }
 
     QPen pen = m_pen;
-    pen.setWidthF(10);      //留白
+    pen.setWidthF(PathStroke);      //留白
     path = CreateShapeOutlineFromPath(path, pen);
     path.addPath(m_endpoints[0].shape());
     path.addPath(m_endpoints[1].shape());
@@ -438,6 +455,34 @@ void CLineItem::removePoint(int index)
     update();
 }
 
+
+//查找ptItem与this的哪一段线段靠近，返回线段的起始点的index
+//该方法用于给lineItem增加折线点时使用
+//param
+//  ptItem, in,  in item coord
+//return
+//  -1, invalide
+//  0..count-2,  线段起点的index
+int CLineItem::segmentIndex(QPointF ptItem)
+{
+    qDebug()<<"";
+    QPen pen = m_pen;
+    pen.setWidthF(PathStroke);      //留白
+
+    int i;
+    for(i = 0; i< m_points.count()-1; i++)
+    {
+        QPainterPath path;
+        path.moveTo(m_points[i]);
+        path.lineTo(m_points[i+1]);
+        path = CreateShapeOutlineFromPath(path, pen);
+        if(path.contains(ptItem))
+            return i;
+    }
+
+    return -1;
+}
+
 //特别说明，lineItem的item coord的原点定位于(0,0) in scene coord， 故lineItem的坐标系等同于sceneItem。
 //return the first lineF seg, in scene coord
 QLineF CLineItem::line() const
@@ -465,7 +510,7 @@ void CLineItem::setLine(const QLineF &line)
 void CLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     Q_UNUSED(widget);
-    qDebug()<<"paint pos:"<<pos() <<", lines:"<<m_points;
+    qDebug()<<"paint pos:"<<pos() <<", selected:"<<(option->state & QStyle::State_Selected);
 
     QPen pen = painter->pen();
     QBrush brush = painter->brush();
@@ -491,6 +536,60 @@ void CLineItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     painter->setBrush(brush);
     painter->setPen(pen);
 }
+
+void CLineItem::onSelect(bool bSelected)
+{
+    if(bSelected)
+    {
+        qDebug()<<" create selection";
+        Q_ASSERT(m_pSelection == 0);
+
+        if(m_pSelection)
+            delete m_pSelection;
+
+        CDraftView *pView;
+
+        pView = dynamic_cast<CDraftView*>(scene()->views().at(0));
+
+        Q_ASSERT(pView != 0);
+        m_pSelection = new CLineSelection(this, pView);
+    }
+    else
+    {
+        qDebug()<<" delete selection";
+        Q_ASSERT(m_pSelection != 0);
+
+        if(m_pSelection != 0)
+        {
+            delete m_pSelection;
+            m_pSelection = 0;
+        }
+    }
+}
+
+void CLineItem::onSceneChange(QGraphicsScene *scene)
+{
+    qDebug()<<"";
+}
+
+QVariant CLineItem::itemChange(GraphicsItemChange change, const QVariant &value)
+{
+    if(change == ItemChildRemovedChange)
+    {
+        QGraphicsItem *item = value.value<QGraphicsItem*>();
+        if(item == m_pNameItem)
+        {
+            m_pNameItem = 0;
+        }
+        else if (item == m_pDescItem)
+        {
+            m_pDescItem = 0;
+        }
+    }
+
+    return C2DItem::itemChange(change, value);
+}
+
 
 void CLineItem::keyPressEvent(QKeyEvent *event)
 {
@@ -530,31 +629,36 @@ void CLineItem::keyPressEvent(QKeyEvent *event)
 }
 
 
-int CLineItem::type() const
+
+
+
+void CLineItem::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 {
-    return Type;
+    qDebug()<<"";
+
+    C2DItem::mouseMoveEvent(event);
 }
 
-
-QVariant CLineItem::itemChange(GraphicsItemChange change, const QVariant &value)
+void CLineItem::mousePressEvent(QGraphicsSceneMouseEvent *event)
 {
-    if(change == ItemChildRemovedChange)
+    qDebug()<<"";
+    if(isSelected())
     {
-        QGraphicsItem *item = value.value<QGraphicsItem*>();
-        if(item == m_pNameItem)
-        {
-            m_pNameItem = 0;
-            return value;
-        }
-        else if (item == m_pDescItem)
-        {
-            m_pDescItem = 0;
-            return value;
-        }
+        //定位鼠标点所在线段的端点index
+        //TODO
     }
 
-    return C2DItem::itemChange(change, value);
+    C2DItem::mousePressEvent(event);
 }
+
+void CLineItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
+{
+    qDebug()<<"";
+    C2DItem::mouseReleaseEvent(event);
+}
+
+
+
 
 
 
@@ -830,15 +934,6 @@ QPainterPath CEndpoint::shape(void) const
  *
  */
 
-CLineSelection::CLineSelection(CLineItem *owner, CDraftView *view)
-                                    : m_pOwner(owner), m_pView(view)
-                                        , m_nLHCode(CLineItem::LHC_0)
-                                        , m_ptTrackPos()
-                                        //, m_rcPressed()
-{
-
-}
-
 Qt::CursorShape CLineSelection::handleCursor(CLineItem::LineHandleCode nLHCode)
 {
     Qt::CursorShape cursor = Qt::ArrowCursor;
@@ -855,6 +950,17 @@ Qt::CursorShape CLineSelection::handleCursor(CLineItem::LineHandleCode nLHCode)
     }
     return cursor;
 }
+
+
+CLineSelection::CLineSelection(CLineItem *owner, CDraftView *view)
+                                    : C2DSelection(owner, view)
+                                        , m_nLHCode(CLineItem::LHC_0)
+                                        , m_ptTrackPos()
+                                        , m_nIndex(-1)
+{
+
+}
+
 
 //map pt in scene coord into pt in parent coord
 //
@@ -889,19 +995,24 @@ QPointF CLineSelection::mapParentToScene(QPointF ptParent)
 //返回的line selection的handle code
 //param
 //  ptView, in, in view coord
+//  bNewAllowed, in,  允许新增point, 即当位于线段上时，返回LHC_NewHandle指示应新增point
 //  nIndex, out,  the handl index pressed when LHC_EndHandle or LHC_MidHandle
 //                the new handle should be inserted between nIndex and nIndex+1 when LHC_NewHandle
 //                invalid when LHC_0
 //
-CLineItem::LineHandleCode CLineSelection::posCode(QPoint ptView, int& nIndex)
+CLineItem::LineHandleCode CLineSelection::posCode(QPoint ptView, bool bNewAllowed, int& nIndex)
 {
-    if(m_pOwner->itemFlags() &(C2DItem::NotSelectBorder | C2DItem::NotSizable))
+    CLineItem *pOwner;
+    pOwner = dynamic_cast<CLineItem*>(m_pOwner);
+    Q_ASSERT(pOwner != 0);
+
+    if(pOwner->itemFlags() &(C2DItem::NotSelectBorder | C2DItem::NotSizable))
         return CLineItem::LHC_0;
 
     QRectF handleRect(0,0, CShapeItem::SelectBorderThickness, CShapeItem::SelectBorderThickness);
 
     QRect rcBounding;           //in CDraftView coord
-    rcBounding = m_pOwner->viewBoundingRect(m_pView);
+    rcBounding = pOwner->viewBoundingRect(m_pView);
 
 #if 1
     int dx,dy;
@@ -915,12 +1026,14 @@ CLineItem::LineHandleCode CLineSelection::posCode(QPoint ptView, int& nIndex)
     if(!rcBounding.contains(ptView))
         return CLineItem::LHC_0;
 
+
+    //find the handle be pressed
     QPointF pt;
-    int size = m_pOwner->pointCount();
+    int size = pOwner->pointCount();
     int i;
     for(i = 0; i<size; i++)
     {
-        pt = m_pOwner->point(i);        //in parent coord
+        pt = pOwner->point(i);        //in parent coord
         pt = mapParentToScene(pt);
         pt = m_pView->mapFromScene(pt);
 
@@ -932,70 +1045,149 @@ CLineItem::LineHandleCode CLineSelection::posCode(QPoint ptView, int& nIndex)
             return (i == 0 || i== size-1) ? CLineItem::LHC_EndHandle : CLineItem::LHC_MidHandle;
         }
     }
+
+    //find the line seg be pressed
+    if(bNewAllowed)
+    {
+        QPointF ptItem = pOwner->mapFromScene(m_pView->mapToScene(ptView));
+
+        i = pOwner->segmentIndex(ptItem);
+        if(i>=0)
+        {
+            qDebug()<<"hit index="<<i;
+
+            nIndex = i;
+            return CLineItem::LHC_NewHandle;
+        }
+    }
+
     return CLineItem::LHC_0;
 }
 
-bool CLineSelection::beginTracking(CDraftView *pView, QPoint ptView)
+bool CLineSelection::isInTracking(void)
 {
-    Q_ASSERT(m_pOwner != 0);
-    Q_ASSERT(pView != 0);
+    return (m_nLHCode != CLineItem::LHC_0);
+}
+
+//return
+//  true, 进入tracking， 按照鼠标位置调整item的形状和尺寸
+//  false, 不进入tracking。
+bool CLineSelection::beginTracking(QMouseEvent *mouseView)
+{
+    CLineItem *pOwner;
+    pOwner = dynamic_cast<CLineItem*>(m_pOwner);
+
+    Q_ASSERT(pOwner != 0);
+    Q_ASSERT(m_pView != 0);
 
     qDebug()<<" ";
 
-    if(m_pOwner->itemFlags() & (C2DItem::NotSelectBorder | C2DItem::NotSizable))
+    if(pOwner->itemFlags() & (C2DItem::NotSelectBorder | C2DItem::NotSizable))
     {
         qDebug()<<"pass ";
         return false;
     }
 
-    m_pView = pView;
+
+
+    QPoint ptView = mouseView->pos();
+    bool bAltKey = (mouseView->modifiers() & Qt::AltModifier);
 
     CLineItem::LineHandleCode nPosCode;
     int nIndex;
-    nPosCode = posCode(ptView, nIndex);
-    if(nPosCode == CLineItem::LHC_0)
+    nPosCode = posCode(ptView, bAltKey, nIndex);
+    switch(nPosCode)
     {
+    case CLineItem::LHC_MidHandle:
+    case CLineItem::LHC_EndHandle:
+        {    //处理拖动selectedBorder handles改变item大小
+            pOwner->grabMouse();
+
+            //mark
+            setCursor(handleCursor(nPosCode));
+
+            m_nLHCode = nPosCode;
+            m_nIndex = nIndex;
+            m_ptPressed = mapSceneToParent(m_pView->mapToScene(ptView));
+            m_ptTrackPos = pOwner->point(m_nIndex);
+
+            pOwner->update();   //更新显示当前的handle.
+
+            qDebug()<<" ";
+            return true;
+        }
+        break;
+    case CLineItem::LHC_NewHandle:
+        {    //处理拖动增加一个point
+            pOwner->grabMouse();
+            setCursor(handleCursor(nPosCode));
+
+            //增加一个节点
+            pOwner->insertPoint(nIndex+1, mapSceneToParent(m_pView->mapToScene(ptView)));
+            //mark
+            m_nLHCode = CLineItem::LHC_MidHandle;
+            m_nIndex = nIndex+1;
+            m_ptPressed = mapSceneToParent(m_pView->mapToScene(ptView));
+            m_ptTrackPos = pOwner->point(m_nIndex);
+
+            qDebug()<<"";
+            return true;
+        }
+        break;
+    case CLineItem::LHC_0:
+    default:
         // go through
-    }
-    else
-    {       //处理拖动selectedBorder handles改变item大小
-        m_pOwner->grabMouse();
-
-        //mark
-        m_pView->setCursor(handleCursor(nPosCode));
-
-        m_nLHCode = nPosCode;
-        m_nIndex = nIndex;
-        m_ptPressed = mapSceneToParent(m_pView->mapToScene(ptView));
-        m_ptTrackPos = m_pOwner->point(m_nIndex);
-        //m_rcPressed = m_pOwner->boundingRect();
-
-        qDebug()<<" ";
-        return true;
+        break;
     }
     return false;
 }
 
 
-void CLineSelection::endTracking(void)
+//return
+//  true, end selection
+//  false, no selection
+//
+bool CLineSelection::endTracking(void)
 {
     Q_ASSERT(m_pOwner != 0);
     Q_ASSERT(m_pView != 0);
 
-    m_nLHCode = CLineItem::LHC_0;
+    bool bRes = false;
 
-    m_pOwner->ungrabMouse();
-    m_pView->unsetCursor();
+    if(isInTracking())
+    {
+        bRes = true;
+        m_nLHCode = CLineItem::LHC_0;
+
+        unsetCursor();
+        m_pOwner->ungrabMouse();
+    }
+    return bRes;
 }
 
-void CLineSelection::track(QPoint ptView)
+//return
+//  true, track
+//  false, no track
+//
+bool CLineSelection::track(QMouseEvent *mouseView)
 {
-    qDebug()<<"---------------track ptView="<<ptView;
-    if(m_nLHCode == CLineItem::LHC_0 || (m_pOwner->itemFlags() & C2DItem::NotSizable))
+    CLineItem *pOwner;
+    pOwner = dynamic_cast<CLineItem*>(m_pOwner);
+
+    Q_ASSERT(pOwner != 0);
+    Q_ASSERT(m_pView != 0);
+
+    if(m_nLHCode == CLineItem::LHC_0 || (pOwner->itemFlags() & C2DItem::NotSizable))
     {
         qDebug()<<"pass";
-        return;
+        return false;
     }
+
+
+    QPoint ptView;
+    ptView = mouseView->pos();
+
+    qDebug()<<"ptView="<<ptView;
 
     QPointF ptParent;
     QPointF ptCur;
@@ -1006,29 +1198,37 @@ void CLineSelection::track(QPoint ptView)
     {
     case CLineItem::LHC_EndHandle:
     case CLineItem::LHC_MidHandle:
-        ptCur = m_ptTrackPos +  ptParent - m_ptPressed;     //in parent coord now.
-        //ptCur = m_pOwner->mapFromParent(ptCur);
-        Q_ASSERT(m_nIndex >= 0 && m_nIndex < m_pOwner->pointCount());
-        m_pOwner->setPoint(m_nIndex, ptCur);
+        {
+            ptCur = m_ptTrackPos +  ptParent - m_ptPressed;     //in parent coord now.
+            //ptCur = m_pOwner->mapFromParent(ptCur);
+            Q_ASSERT(m_nIndex >= 0 && m_nIndex < pOwner->pointCount());
+            pOwner->setPoint(m_nIndex, ptCur);
+        }
         break;
     case CLineItem::LHC_NewHandle:
-        break;
+    case CLineItem::LHC_0:
     default:
         Q_ASSERT(false);
         break;
     }
+    return true;
 }
 
 //param
 //  painter, in,  view painter
 void CLineSelection::draw(QPainter *viewPainter)
 {
+    CLineItem *pOwner;
+    pOwner = dynamic_cast<CLineItem*>(m_pOwner);
+
+    Q_ASSERT(pOwner != 0);
+    Q_ASSERT(m_pView != 0);
 
     viewPainter->save();
     viewPainter->setPen(Qt::NoPen);
     viewPainter->setBrush(QBrush(Qt::darkBlue,Qt::SolidPattern));
 
-    QRect rcViewBounding = m_pOwner->viewBoundingRect(m_pView);
+    QRect rcViewBounding = pOwner->viewBoundingRect(m_pView);
 
     if(rcViewBounding.height() < C2DItem::SelectBorderThickness || rcViewBounding.width() < C2DItem::SelectBorderThickness)
     {
@@ -1048,45 +1248,30 @@ void CLineSelection::draw(QPainter *viewPainter)
     QPoint ptView;
     int size;
     int i;
-    size = m_pOwner->pointCount();
+    size = pOwner->pointCount();
     for(i = 0; i< size; i++)
     {
-        pt = m_pOwner->point(i);        //in parent coord
+        pt = pOwner->point(i);        //in parent coord
         pt = mapParentToScene(pt);
         ptView = m_pView->mapFromScene(pt);
         ptView.rx() = qBound(rcViewBounding.left(), ptView.x(), rcViewBounding.right());
         ptView.ry() = qBound(rcViewBounding.top(), ptView.y(), rcViewBounding.bottom());
 
         handleRect.moveCenter(ptView);
+
+        if(m_nLHCode != CLineItem::LHC_0 && m_nIndex == i)
+        {
+            viewPainter->setBrush(QBrush(Qt::green, Qt::SolidPattern));
+            viewPainter->drawRect(handleRect);
+            viewPainter->setBrush(QBrush(Qt::darkBlue, Qt::SolidPattern));
+            continue;
+        }
+
         viewPainter->drawRect(handleRect);
     }
 
     viewPainter->restore();
 }
-
-void CLineSelection::drawSelection(QPainter *viewPainter, const QRectF &rectScene)
-{
-    Q_ASSERT(m_pOwner != 0);
-    Q_ASSERT(m_pView != 0);
-
-    //没有selection border
-    if(m_pOwner->itemFlags() &(C2DItem::NotSelectBorder))
-    {
-        qDebug()<<"pass";
-        return;
-    }
-
-    QRectF rectItemScene = m_pOwner->sceneBoundingRect();
-
-    //若不在rectScene中，则pass
-    if(!rectItemScene.intersects(rectScene))
-    {
-        return;
-    }
-
-    draw(viewPainter);
-}
-
 
 
 

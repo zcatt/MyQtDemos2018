@@ -3,10 +3,88 @@
 #include "shapeselection.h"
 #include "draftview.h"
 
-CShapeSelection::CShapeSelection(CShapeItem *owner, CDraftView *view) : m_pOwner(owner), m_pView(view)
-                        , m_nBorderHandleCode(CShapeItem::BHC_0), m_ptTrackPos(), m_rcPressed()
+
+
+/*
+ *
+ *
+ *      C2DSelection
+ *
+ *
+ *      负责selection的显示和交互处理。 selection是item选中时显示的选中框和handle。
+ *
+*/
+C2DSelection::C2DSelection(C2DItem *owner, CDraftView *view): m_pOwner(owner), m_pView(view), m_bSetCursor(false)
 {
 }
+
+C2DSelection::~C2DSelection()
+{
+    unsetCursor();
+}
+
+CDraftView* C2DSelection::view(void)
+{
+    return m_pView;
+}
+
+C2DItem* C2DSelection::owner(void)
+{
+    return m_pOwner;
+}
+
+void C2DSelection::setCursor(const QCursor& cursor)
+{
+    m_bSetCursor = true;
+    m_pView->setCursor(cursor);
+
+}
+
+void C2DSelection::unsetCursor(void)
+{
+    if(m_bSetCursor)
+    {
+        m_bSetCursor = false;
+        if(m_pView != 0)
+            m_pView->unsetCursor();
+    }
+}
+
+//params
+//  viewPainer, in,
+//  rectScene,  in,  in scene coord
+//
+void C2DSelection::drawSelection(QPainter *viewPainter, const QRectF &rectScene)
+{
+    Q_ASSERT(m_pOwner != 0);
+    Q_ASSERT(m_pView != 0);
+
+    //没有selection border
+    if(m_pOwner->itemFlags() &(C2DItem::NotSelectBorder))
+    {
+        qDebug()<<"pass";
+        return;
+    }
+
+    QRectF rectItemScene = m_pOwner->sceneBoundingRect();
+
+    //若不在rectScene中，则pass
+    if(!rectItemScene.intersects(rectScene))
+        return;
+
+    draw(viewPainter);
+}
+
+
+/*
+ *
+ *
+ *      CShapeSelection
+ *
+ *
+ *      8个handle的外接矩形选中框
+ *
+*/
 
 Qt::CursorShape CShapeSelection::borderCursor(CShapeItem::BoarderHandleCode nBHCode)
 {
@@ -36,13 +114,22 @@ Qt::CursorShape CShapeSelection::borderCursor(CShapeItem::BoarderHandleCode nBHC
     return cursor;
 }
 
+CShapeSelection::CShapeSelection(CShapeItem *owner, CDraftView *view) : C2DSelection(owner, view)
+                        , m_nBorderHandleCode(CShapeItem::BHC_0)
+                        , m_ptPressed()
+                        , m_ptTrackPos()
+                        , m_rcPressed()
+{
+}
+
+
 //返回以rect为外沿的select border的8个handle rect code
 //param
 //  ptView, in, in view coord
 //
 CShapeItem::BoarderHandleCode CShapeSelection::posCode(QPoint ptView)
 {
-    if(m_pOwner->shapeItemFlags() &(CShapeItem::NotSelectBorder | CShapeItem::NotSizable))
+    if(m_pOwner->itemFlags() &(C2DItem::NotSelectBorder | C2DItem::NotSizable))
         return CShapeItem::BHC_0;
 
     QRect rcBounding;           //in CDraftView coord
@@ -99,40 +186,37 @@ CShapeItem::BoarderHandleCode CShapeSelection::posCode(QPoint ptView)
     return CShapeItem::BHC_0;
 }
 
+bool CShapeSelection::isInTracking(void)
+{
+    return (m_nBorderHandleCode != CShapeItem::BHC_0);
+}
 
 //return
 //  true, begin tracking
 //  false, fail to begin tracking.
-bool CShapeSelection::beginTracking(CDraftView *pView, QPoint ptView)
+bool CShapeSelection::beginTracking(QMouseEvent* mouseView)
 {
     Q_ASSERT(m_pOwner != 0);
-    Q_ASSERT(pView != 0);
+    Q_ASSERT(m_pView != 0);
+    Q_ASSERT(m_nBorderHandleCode == CShapeItem::BHC_0);
 
-    if(m_pOwner->shapeItemFlags() & (CShapeItem::NotSelectBorder | CShapeItem::NotSizable))
+    if(m_pOwner->itemFlags() & (C2DItem::NotSelectBorder | C2DItem::NotSizable))
     {
         qDebug()<<"pass ";
         return false;
     }
 
-    m_pView = pView;
-
-
-    //QPoint pt = event->pos();   //in view coord
+    QPoint ptView = mouseView->pos();   //in view coord
 
     CShapeItem::BoarderHandleCode nPosCode;
     nPosCode = posCode(ptView);
-    if(nPosCode == CShapeItem::BHC_0)
+    if(nPosCode != CShapeItem::BHC_0)
     {
-        // go through
-    }
-    else
-    {       //处理拖动selectedBorder handles改变item大小
+        //处理拖动selectedBorder handles改变item大小
         m_pOwner->grabMouse();
 
         //mark
-        //m_pOwner->setTrackBorder(true, nPosCode, mapToScene(pt));
-        //m_bSetBorderCursor = true;
-        m_pView->setCursor(borderCursor(nPosCode));
+        setCursor(borderCursor(nPosCode));
 
         m_nBorderHandleCode = nPosCode;
         m_ptPressed = m_pView->mapToScene(ptView);
@@ -143,26 +227,50 @@ bool CShapeSelection::beginTracking(CDraftView *pView, QPoint ptView)
         return true;
     }
     return false;
-
 }
 
-void CShapeSelection::endTracking(void)
+//return
+//  true, end selection
+//  false, no selection
+//
+bool CShapeSelection::endTracking(void)
 {
     Q_ASSERT(m_pOwner != 0);
     Q_ASSERT(m_pView != 0);
 
-    m_pOwner->ungrabMouse();
-    m_pView->unsetCursor();
+    bool bRes = false;
+    if (isInTracking())
+    {
+        bRes = true;
+        m_nBorderHandleCode = CShapeItem::BHC_0;
+
+        unsetCursor();
+        m_pOwner->ungrabMouse();
+    }
+    return bRes;
 }
 
-void CShapeSelection::track(QPoint ptView)
+//return
+//  true, track
+//  false, no track
+//
+bool CShapeSelection::track(QMouseEvent* mouseView)
 {
-    qDebug()<<"---------------track ptView="<<ptView;
-    if(m_nBorderHandleCode == CShapeItem::BHC_0 || (m_pOwner->shapeItemFlags()&CShapeItem::NotSizable))
+    CShapeItem *pOwner;
+    pOwner = dynamic_cast<CShapeItem*>(m_pOwner);
+
+    Q_ASSERT(pOwner != 0);
+    Q_ASSERT(m_pView != 0);
+
+    if(m_nBorderHandleCode == CShapeItem::BHC_0 || (pOwner->itemFlags()&C2DItem::NotSizable))
     {
         qDebug()<<"pass";
-        return;
+        return false;
     }
+
+    QPoint ptView;
+    ptView = mouseView->pos();
+    qDebug()<<"---------------track ptView="<<ptView;
 
     QPointF ptScene;
     ptScene = m_pView->mapToScene(ptView);
@@ -170,10 +278,10 @@ void CShapeSelection::track(QPoint ptView)
     QSizeF size;
     QPointF ptCur;
 
-    QPointF deltaLocal = m_pOwner->mapFromScene(ptScene) - m_pOwner->mapFromScene(m_ptPressed);
+    QPointF deltaLocal = pOwner->mapFromScene(ptScene) - pOwner->mapFromScene(m_ptPressed);
     QPointF deltaParent;
 
-    qDebug()<<"old bounding = "<<m_pOwner->boundingRect();
+    qDebug()<<"old bounding = "<< pOwner->boundingRect();
 
     switch(m_nBorderHandleCode)
     {
@@ -181,123 +289,124 @@ void CShapeSelection::track(QPoint ptView)
     case CShapeItem::BHC_RightBottom:
         // adjust boundingRect
         size = m_rcPressed.adjusted(0, 0, deltaLocal.x(), deltaLocal.y()).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
         // adjust pos to keep leftTop not to move
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().topLeft()) - m_pOwner->mapToParent(m_rcPressed.topLeft());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().topLeft()) - pOwner->mapToParent(m_rcPressed.topLeft());
         ptCur  = m_ptTrackPos - deltaParent;
-        m_pOwner->setPos(ptCur);
-        qDebug()<<"new bounding = "<<m_pOwner->boundingRect();
+        pOwner->setPos(ptCur);
+        qDebug()<<"new bounding = "<<pOwner->boundingRect();
         break;
 
     case CShapeItem::BHC_LeftTop:
         size = m_rcPressed.adjusted(deltaLocal.x(), deltaLocal.y(), 0, 0).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().bottomRight()) - m_pOwner->mapToParent(m_rcPressed.bottomRight());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().bottomRight()) - pOwner->mapToParent(m_rcPressed.bottomRight());
         ptCur  = m_ptTrackPos - deltaParent;
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
 
 
     case CShapeItem::BHC_RightTop:
         size = m_rcPressed.adjusted(0, deltaLocal.y(), deltaLocal.x(), 0).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
         // adjust pos to keep leftTop not to move
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().bottomLeft()) - m_pOwner->mapToParent(m_rcPressed.bottomLeft());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().bottomLeft()) - pOwner->mapToParent(m_rcPressed.bottomLeft());
         ptCur  = m_ptTrackPos - deltaParent;
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
 
     case CShapeItem::BHC_LeftBottom:
         size = m_rcPressed.adjusted(deltaLocal.x(), 0, 0, deltaLocal.y()).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
         // adjust pos to keep leftTop not to move
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().topRight()) - m_pOwner->mapToParent(m_rcPressed.topRight());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().topRight()) - pOwner->mapToParent(m_rcPressed.topRight());
         ptCur  = m_ptTrackPos - deltaParent;
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
 
     case CShapeItem::BHC_CenterTop:
         size = m_rcPressed.adjusted(0, deltaLocal.y(), 0, 0).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().bottomRight()) - m_pOwner->mapToParent(m_rcPressed.bottomRight());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().bottomRight()) - pOwner->mapToParent(m_rcPressed.bottomRight());
         ptCur  = m_ptTrackPos;
         ptCur.ry() -= deltaParent.y();
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
 
     case CShapeItem::BHC_CenterBottom:
         size = m_rcPressed.adjusted(0, 0, 0, deltaLocal.y()).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().topRight()) - m_pOwner->mapToParent(m_rcPressed.topRight());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().topRight()) - pOwner->mapToParent(m_rcPressed.topRight());
         ptCur  = m_ptTrackPos;
         ptCur.ry() -= deltaParent.y();
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
 
     case CShapeItem::BHC_LeftCenter:
         size = m_rcPressed.adjusted(deltaLocal.x(), 0, 0, 0).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().topRight()) - m_pOwner->mapToParent(m_rcPressed.topRight());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().topRight()) - pOwner->mapToParent(m_rcPressed.topRight());
         ptCur  = m_ptTrackPos;
         ptCur.rx() -= deltaParent.x();
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
 
     case CShapeItem::BHC_RightCenter:
         size = m_rcPressed.adjusted(0, 0, deltaLocal.x(),0).size();
-        m_pOwner->setBoundingRect(size);
+        pOwner->setBoundingRect(size);
 
-        deltaParent = m_pOwner->mapToParent(m_pOwner->boundingRect().topLeft()) - m_pOwner->mapToParent(m_rcPressed.topLeft());
+        deltaParent = pOwner->mapToParent(pOwner->boundingRect().topLeft()) - pOwner->mapToParent(m_rcPressed.topLeft());
         ptCur  = m_ptTrackPos;
         ptCur.rx() -= deltaParent.x();
-        m_pOwner->setPos(ptCur);
+        pOwner->setPos(ptCur);
         break;
     case CShapeItem::BHC_0:
     default:
         Q_ASSERT(false);
         break;
     }
+    return true;
 }
 
 //param
 //  painter, in,  view painter
-void CShapeSelection::draw(QPainter *painter)
+void CShapeSelection::draw(QPainter *viewPainter)
 {
     QRect rcBounding;           //in CDraftView coord
     rcBounding = m_pOwner->viewBoundingRect(m_pView);
 
-    painter->save();
+    viewPainter->save();
 
     //border
 
     QBrush br(Qt::black, Qt::Dense4Pattern);
     QPen pen;
     pen.setBrush(br);
-    pen.setWidth(CShapeItem::SelectBorderThickness);
+    pen.setWidth(C2DItem::SelectBorderThickness);
 
-    painter->setPen(pen);
-    painter->setBrush(Qt::NoBrush);
+    viewPainter->setPen(pen);
+    viewPainter->setBrush(Qt::NoBrush);
 
     QRectF r = rcBounding;
-    qreal delta = CShapeItem::SelectBorderThickness/2.0;
+    qreal delta = C2DItem::SelectBorderThickness/2.0;
     r.adjust(delta, delta, -delta, -delta);
 
-    painter->drawRect(r);
+    viewPainter->drawRect(r);
 
-    if(!(m_pOwner->shapeItemFlags() &(CShapeItem::NotSizable)))
+    //8 rect handles
+    if(!(m_pOwner->itemFlags() &(C2DItem::NotSizable)))
     {
-        //8 rect handles
-        painter->setPen(Qt::SolidLine);
-        painter->setBrush(QBrush(Qt::white,Qt::SolidPattern));
+        viewPainter->setPen(Qt::SolidLine);
+        viewPainter->setBrush(QBrush(Qt::white,Qt::SolidPattern));
 
-        QRectF handleRect(0,0, CShapeItem::SelectBorderThickness, CShapeItem::SelectBorderThickness);
+        QRectF handleRect(0,0, C2DItem::SelectBorderThickness, C2DItem::SelectBorderThickness);
 
         qreal top,bottom,left,right;
         top = rcBounding.top();  bottom = rcBounding.bottom();
@@ -305,60 +414,36 @@ void CShapeSelection::draw(QPainter *painter)
 
 
         handleRect.moveTo(left, top);
-        painter->drawRect(handleRect);
+        viewPainter->drawRect(handleRect);
 
-        handleRect.moveTo(right - CShapeItem::SelectBorderThickness, top);
-        painter->drawRect(handleRect);
+        handleRect.moveTo(right - C2DItem::SelectBorderThickness, top);
+        viewPainter->drawRect(handleRect);
 
-        handleRect.moveTo(left, bottom - CShapeItem::SelectBorderThickness);
-        painter->drawRect(handleRect);
+        handleRect.moveTo(left, bottom - C2DItem::SelectBorderThickness);
+        viewPainter->drawRect(handleRect);
 
-        handleRect.moveTo(right - CShapeItem::SelectBorderThickness, bottom - CShapeItem::SelectBorderThickness);
-        painter->drawRect(handleRect);
+        handleRect.moveTo(right - C2DItem::SelectBorderThickness, bottom - C2DItem::SelectBorderThickness);
+        viewPainter->drawRect(handleRect);
 
         qreal center;
-        center = (rcBounding.left() + rcBounding.right() - CShapeItem::SelectBorderThickness)/2.0;
+        center = (rcBounding.left() + rcBounding.right() - C2DItem::SelectBorderThickness)/2.0;
 
         handleRect.moveTo(center, top);
-        painter->drawRect(handleRect);
+        viewPainter->drawRect(handleRect);
 
-        handleRect.moveTo(center, bottom - CShapeItem::SelectBorderThickness);
-        painter->drawRect(handleRect);
+        handleRect.moveTo(center, bottom - C2DItem::SelectBorderThickness);
+        viewPainter->drawRect(handleRect);
 
-        center = (rcBounding.top() + rcBounding.bottom() - CShapeItem::SelectBorderThickness)/2.0;
+        center = (rcBounding.top() + rcBounding.bottom() - C2DItem::SelectBorderThickness)/2.0;
 
         handleRect.moveTo(left, center);
-        painter->drawRect(handleRect);
+        viewPainter->drawRect(handleRect);
 
-        handleRect.moveTo(right - CShapeItem::SelectBorderThickness, center);
-        painter->drawRect(handleRect);
+        handleRect.moveTo(right - C2DItem::SelectBorderThickness, center);
+        viewPainter->drawRect(handleRect);
 
     }
 
-    painter->restore();
+    viewPainter->restore();
 }
 
-//params
-//  viewPainer, in,
-//  rectScene,  in,  in scene coord
-//
-void CShapeSelection::drawSelection(QPainter *viewPainter, const QRectF &rectScene)
-{
-    Q_ASSERT(m_pOwner != 0);
-    Q_ASSERT(m_pView != 0);
-
-    //没有selection border
-    if(m_pOwner->shapeItemFlags() &(CShapeItem::NotSelectBorder))
-    {
-        qDebug()<<"pass";
-        return;
-    }
-
-    QRectF rectItemScene = m_pOwner->sceneBoundingRect();
-
-    //若不在rectScene中，则pass
-    if(!rectItemScene.intersects(rectScene))
-        return;
-
-    draw(viewPainter);
-}

@@ -1,6 +1,6 @@
 ﻿#include "preheader.h"
 
-
+#include "draftview.h"
 #include "shapeitem.h"
 #include "shapeselection.h"
 #include "propeditor.h"
@@ -130,6 +130,11 @@ C2DItem::C2DItem(QGraphicsItem *parent)
     setAcceptHoverEvents(true);
 }
 
+C2DItem::~C2DItem()
+{
+
+}
+
 int C2DItem::type() const
 {
     return Type;
@@ -225,6 +230,7 @@ QVariant C2DItem::itemChange(GraphicsItemChange change, const QVariant &value)
     if(change == QGraphicsItem::ItemSelectedChange)
     {
         qDebug()<<"change="<<change<< "select="<<value.toBool();
+        onSelect(value.toBool());
         emit selectedChange(this, value.toBool());
     }
     else if (change == QGraphicsItem::ItemPositionChange)
@@ -253,7 +259,7 @@ CShapeItem::CShapeItem(QGraphicsItem *parent)
         : C2DItem(parent)
             , m_nShapeItemFlag(0)
             , m_sizeMin(SelectBorderThickness*3 +2, SelectBorderThickness*3 +2)
-            , m_pSelection(Q_NULLPTR)
+            , m_pSelection(0)
 #if 0
             , m_bTrackingBorder(false), m_nBorderHandleCode(BHC_0), m_ptPressed(), m_ptTrackPos(), m_rcPressed()
 #endif
@@ -266,29 +272,10 @@ CShapeItem::~CShapeItem()
         delete m_pSelection;
 }
 
-CShapeItem::ShapeItemFlags CShapeItem::shapeItemFlags() const
-{
-    return ShapeItemFlags(m_nShapeItemFlag);
-}
-
-void CShapeItem::setShapeItemFlag(ShapeItemFlag flag, bool enabled)
-{
-    if(enabled)
-        m_nShapeItemFlag |= flag;
-    else
-        m_nShapeItemFlag &= ~flag;
-}
-
-void CShapeItem::setShapeItemFlags(ShapeItemFlags flags)
-{
-    m_nShapeItemFlag = flags;
-}
-
 int CShapeItem::type() const
 {
     return Type;
 }
-
 
 
 void CShapeItem::setPen(const QPen &pen)
@@ -313,11 +300,17 @@ QSizeF CShapeItem::minimalSize(void) const
 }
 
 
+
 //return
 //  0,   不在调整大小和位置模式
-CShapeSelection* CShapeItem::getSelection(void)
+C2DSelection* CShapeItem::getSelection(void)
 {
     return m_pSelection;
+}
+
+bool CShapeItem::isTrackingSelection(void)
+{
+    return m_pSelection != 0 && m_pSelection->isInTracking();
 }
 
 //鼠标在CDraftView中点中handle，进入拖拽调整大小和位置模式。
@@ -328,18 +321,27 @@ CShapeSelection* CShapeItem::getSelection(void)
 //  true,         进入调整大小模式.
 //  false,            条件不具备，不进入调整大小模式.
 //
-bool CShapeItem::beginSelection(CDraftView *pView, QPoint ptView)
+bool CShapeItem::beginSelection(CDraftView *pView,  QMouseEvent* mouseView)
 {
-    Q_ASSERT(m_pSelection == 0);
+    Q_ASSERT(pView != 0);
 
-    m_pSelection = new CShapeSelection(this);
-    bool bOk = m_pSelection->beginTracking(pView, ptView);
+    if(m_pSelection == 0)
+    {
+        m_pSelection = new CShapeSelection(this, pView);
+    }
 
+    Q_ASSERT(m_pSelection->view() == pView);
+    Q_ASSERT(!m_pSelection->isInTracking());
+
+    bool bOk = m_pSelection->beginTracking(mouseView);
+
+#if 0
     if(!bOk)
     {
         delete m_pSelection;
         m_pSelection = 0;
     }
+#endif
 
     qDebug()<<"beginSelection ------------- OK="<<bOk;
     return bOk;
@@ -349,42 +351,40 @@ bool CShapeItem::beginSelection(CDraftView *pView, QPoint ptView)
 //return
 //  true, end selection
 //  false, no selection
+//
 bool CShapeItem::endSelection(void)
 {
+    bool bRes = false;
+
     if(m_pSelection!=0)
     {
-        m_pSelection->endTracking();
+        bRes = m_pSelection->endTracking();
+#if 0
         delete m_pSelection;
         m_pSelection = 0;
-        return true;
+#endif
     }
-    return false;
+    return bRes;
 }
 
 //return
 //  true,  在调整中
 //  false， 不在调整中
-bool CShapeItem::trackSelection(QPoint ptView)
+bool CShapeItem::trackSelection(QMouseEvent* mouseView)
 {
 #if 0
     qDebug()<<"m_pSelection"<< m_pSelection;
 #endif
+    bool bRes = false;
 
     if(m_pSelection != 0)
     {
-
-        m_pSelection->track(ptView);
-        return true;
+        bRes = m_pSelection->track(mouseView);
     }
-    return false;
+    return bRes;
 }
 
 
-
-bool CShapeItem::isTrackingBorder(void)
-{
-    return (m_pSelection != 0);
-}
 
 
 QPainterPath CShapeItem::shape() const
@@ -393,6 +393,47 @@ QPainterPath CShapeItem::shape() const
 
     path.addRect(m_rectBounding);
     return path;
+}
+
+void CShapeItem::onSelect(bool bSelected)
+{
+    if(bSelected)
+    {
+        qDebug()<<" create selection";
+        Q_ASSERT(m_pSelection == 0);
+
+        if(m_pSelection)
+            delete m_pSelection;
+
+        CDraftView *pView;
+#if 0
+        QGraphicsView *pGV;
+        pGV = scene()->views().at(0);
+
+        pView = dynamic_cast<CDraftView*>(pGV);
+#else
+        pView = dynamic_cast<CDraftView*>(scene()->views().at(0));
+#endif
+        Q_ASSERT(pView != 0);
+        m_pSelection = new CShapeSelection(this, pView);
+    }
+    else
+    {
+        qDebug()<<" delete selection";
+        Q_ASSERT(m_pSelection != 0);
+
+        if(m_pSelection != 0)
+        {
+            delete m_pSelection;
+            m_pSelection = 0;
+        }
+    }
+}
+
+
+void CShapeItem::onSceneChange(QGraphicsScene *scene)
+{
+    qDebug()<<"";
 }
 
 #if 0
@@ -599,8 +640,8 @@ void CRectItem::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 
 CTextItem::CTextItem(C2DItem *parent): CShapeItem(parent), m_Name()
 {
-    setShapeItemFlag(NotSizable, true);
-
+    setItemFlag(NotSizable, true);
+    setItemFlag(NotSelectBorder, true);
 }
 
 void CTextItem::clear(void)
@@ -661,6 +702,7 @@ void CTextItem::updateBoundingRect(void)
     qreal thickness = (pen().style() == Qt::NoPen) ? 0.0 :m_pen.widthF()/2.0;
     qDebug()<<"thickness ="<< thickness;
     thickness+=1;
+    //thickness += SelectBorderThickness;     //handle的margins.
 
     if (thickness > 0.0)
         m_rectBounding.adjust(-thickness, -thickness, thickness, thickness);
@@ -675,24 +717,30 @@ void CTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
     qDebug()<<"clipPath= "<<painter->clipPath();
     qDebug()<<"clipRegion= "<<painter->clipRegion();
 
-
-#if 1
-    painter->setPen(Qt::red);
+    QPen pen = painter->pen();
     QBrush brush = painter->brush();
-    painter->setBrush(Qt::yellow);
-    painter->drawPath(shape());
-    painter->setBrush(brush);
+#if 1
+    painter->setPen(m_pen);
+    painter->setBrush(m_brush);
+    //painter->drawPath(shape());
+    painter->drawRect(m_rectBounding);
 
 
     QFont fnt;
     //TODO, 设置字形和字号
     painter->setFont(fnt);
-#if 0
+
+#if 1
+    painter->drawText(m_rectBounding, 0, m_Name);
+
+    //QRectF rc;
+    //rc = m_rectBounding.adjusted(SelectBorderThickness, SelectBorderThickness
+    //                             , -SelectBorderThickness,-SelectBorderThickness);
+    //painter->drawText(rc, 0, m_Name);
+#else
     QFontMetricsF fm(fnt);
 
     painter->drawText(m_rectBounding.left(), m_rectBounding.top()+fm.ascent(), m_Name);
-#else
-    painter->drawText(m_rectBounding, 0, m_Name);
 #endif
 
 #endif
@@ -704,6 +752,9 @@ void CTextItem::paint(QPainter *painter, const QStyleOptionGraphicsItem *option,
         CShapeItem::CreateHighlightSelected(this, painter, option);
     }
 #endif
+
+    painter->setBrush(brush);
+    painter->setPen(pen);
 
 }
 

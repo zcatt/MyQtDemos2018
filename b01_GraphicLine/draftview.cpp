@@ -70,7 +70,11 @@ void CDraftView::drawForeground(QPainter *painter, const QRectF &rectScene)
                 Q_ASSERT(sitem != 0);
 
                 CShapeSelection *pSelection;
-                pSelection = sitem->getSelection();
+                pSelection = static_cast<CShapeSelection*>(sitem->getSelection());
+#if 1
+                Q_ASSERT(pSelection != 0);
+                pSelection->drawSelection(painter, rectScene);
+#else
                 if(pSelection)
                 {
                     pSelection->drawSelection(painter, rectScene);
@@ -81,6 +85,7 @@ void CDraftView::drawForeground(QPainter *painter, const QRectF &rectScene)
                     CShapeSelection selection(sitem, this);
                     selection.drawSelection(painter, rectScene);
                 }
+#endif
             }                           //if(item->type() >= C2DItem::Type_Shape)
             else if (item->type() == C2DItem::Type_Line)
             {
@@ -89,7 +94,11 @@ void CDraftView::drawForeground(QPainter *painter, const QRectF &rectScene)
                 Q_ASSERT(lineItem != 0);
 
                 CLineSelection *pSelection;
-                pSelection = lineItem->getSelection();
+                pSelection = static_cast<CLineSelection*>(lineItem->getSelection());
+#if 1
+                Q_ASSERT(pSelection != 0);
+                pSelection->drawSelection(painter, rectScene);
+#else
                 if(pSelection)
                 {
                     pSelection->drawSelection(painter, rectScene);
@@ -100,6 +109,7 @@ void CDraftView::drawForeground(QPainter *painter, const QRectF &rectScene)
                     CLineSelection selection(lineItem, this);
                     selection.drawSelection(painter, rectScene);
                 }
+#endif
             }
             else
             {
@@ -128,11 +138,22 @@ void CDraftView::mousePressEvent(QMouseEvent *event)
         selectedItems = scene()->selectedItems();
         if(selectedItems.count()==1)
         {
+#if 1
+            if(selectedItems.first()->type() > C2DItem::Type_2D)
+            {
+                C2DItem *item;
+                item = static_cast<C2DItem*>(selectedItems.first());
+                if(item->beginSelection(this, event))
+                {
+                    return;
+                }
+            }
+#else
             if(selectedItems.first()->type() > C2DItem::Type_Shape)
             {
                 CShapeItem *sitem;
                 sitem = static_cast<CShapeItem*>(selectedItems.first());
-                if(sitem->beginSelection(this, event->pos()))
+                if(sitem->beginSelection(this, event))
                 {
                     return;
                 }
@@ -140,12 +161,13 @@ void CDraftView::mousePressEvent(QMouseEvent *event)
             else if(selectedItems.first()->type() == C2DItem::Type_Line)
             {
                 CLineItem *lineItem;
-                lineItem = dynamic_cast<CLineItem*>(selectedItems.first());
-                if(lineItem->beginSelection(this, event->pos()))
+                lineItem = static_cast<CLineItem*>(selectedItems.first());
+                if(lineItem->beginSelection(this, event))
                 {
                     return;
                 }
             }
+#endif
         }//if(selectedItems.count()==1)
     }
 
@@ -166,6 +188,18 @@ void CDraftView::mouseReleaseEvent(QMouseEvent *event)
     selectedItems = scene()->selectedItems();
     if(selectedItems.count()==1)
     {
+#if 1
+        if(selectedItems.first()->type() > C2DItem::Type_2D)
+        {
+            C2DItem *item;
+            item = static_cast<C2DItem*>(selectedItems.first());
+            item->trackSelection(event);
+            if(item->endSelection())
+            {
+                return; //pass QGraphicsView::mouseReleaseEvent()
+            }
+        }
+#else
         if(selectedItems.first()->type() > C2DItem::Type_Shape)
         {
             CShapeItem *sitem;
@@ -180,13 +214,13 @@ void CDraftView::mouseReleaseEvent(QMouseEvent *event)
         {
             CLineItem *lineItem;
             lineItem = dynamic_cast<CLineItem*>(selectedItems.first());
-            lineItem->trackSelection(event->pos());
+            lineItem->trackSelection(event);
             if(lineItem->endSelection())
             {
                 return; //pass QGraphicsView::mouseReleaseEvent()
             }
         }
-
+#endif
     } //if(selectedItems.count()==1)
 
     QGraphicsView::mouseReleaseEvent(event);
@@ -205,6 +239,81 @@ void CDraftView::mouseMoveEvent(QMouseEvent *event)
     if(selectedItems.count()==1)
     {
         //qDebug()<< "    type="<< selectedItems.first()->type();
+
+#if 1
+        if(selectedItems.first()->type() > C2DItem::Type_2D)
+        {
+            C2DItem *item;
+            item = static_cast<C2DItem*>(selectedItems.first());
+            if(item->trackSelection(event))
+            {
+                return; //pass QGraphicsView::mouseMoveEvent()
+            }
+            else
+            {
+                //非拖动中, 更新cursor
+                if(selectedItems.first()->type() > C2DItem::Type_Shape)
+                {
+                    CShapeItem *sitem;
+                    sitem = static_cast<CShapeItem*>(selectedItems.first());
+
+                    CShapeSelection selection(sitem, this);
+                    CShapeItem::BoarderHandleCode nPosCode;
+                    nPosCode = selection.posCode(event->pos());
+                    if(nPosCode == CShapeItem::BHC_0)
+                    {
+                        //复原cursor
+                        if(m_bSetBorderCursor)
+                        {
+                            m_bSetBorderCursor = false;
+                            unsetCursor();
+                        }
+                    }
+                    else
+                    {
+                        m_bSetBorderCursor = true;
+                        //sitem->setBorderCursor(nPosCode);
+                        setCursor(CShapeSelection::borderCursor(nPosCode));
+
+                        return; //pass QGraphicsView::mouseMoveEvent()
+                    }
+                }
+                else if(selectedItems.first()->type() == C2DItem::Type_Line)
+                {
+                    CLineItem *lineItem;
+                    lineItem = dynamic_cast<CLineItem*>(selectedItems.first());
+
+                    CLineSelection selection(lineItem, this);
+                    CLineItem::LineHandleCode nPosCode;
+                    int nIndex;
+                    nPosCode = selection.posCode(event->pos(), false, nIndex);
+
+                    qDebug()<<"posCode="<<nPosCode;
+
+                    if(nPosCode == CLineItem::LHC_0)
+                    {
+                        //复原cursor
+                        if(m_bSetBorderCursor)
+                        {
+                            m_bSetBorderCursor = false;
+                            unsetCursor();
+                        }
+                    }
+                    else
+                    {
+                        m_bSetBorderCursor = true;
+                        //sitem->setBorderCursor(nPosCode);
+                        setCursor(CLineSelection::handleCursor(nPosCode));
+
+                        return; //pass QGraphicsView::mouseMoveEvent()
+                    }
+                }
+
+
+            }
+        }
+#else
+
         if(selectedItems.first()->type() > C2DItem::Type_Shape)
         {
             CShapeItem *sitem;
@@ -242,7 +351,7 @@ void CDraftView::mouseMoveEvent(QMouseEvent *event)
         {
             CLineItem *lineItem;
             lineItem = dynamic_cast<CLineItem*>(selectedItems.first());
-            if(lineItem->trackSelection(event->pos()))
+            if(lineItem->trackSelection(event))
             {
                 return; //pass QGraphicsView::mouseMoveEvent()
             }
@@ -252,7 +361,7 @@ void CDraftView::mouseMoveEvent(QMouseEvent *event)
                 CLineSelection selection(lineItem, this);
                 CLineItem::LineHandleCode nPosCode;
                 int nIndex;
-                nPosCode = selection.posCode(event->pos(), nIndex);
+                nPosCode = selection.posCode(event->pos(), false, nIndex);
 
                 qDebug()<<"posCode="<<nPosCode;
 
@@ -275,7 +384,7 @@ void CDraftView::mouseMoveEvent(QMouseEvent *event)
                 }
             }
         }
-
+#endif
     }       //if(selectedItems.count()==1)
 
     QGraphicsView::mouseMoveEvent(event);

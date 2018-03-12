@@ -2,6 +2,8 @@
 #define LINEITEM_H
 
 #include "shapeitem.h"
+#include "shapeselection.h"
+
 
 class CLineSelection;
 
@@ -115,6 +117,10 @@ public:
 #endif
     ~CLineItem();
 
+    enum{ Type = Type_Line};
+    int type() const override;
+
+
     void setName(const QString& name);
     void setDesc(const QString& desc);
     CEndpoint& endPoint(int nIndex);
@@ -133,6 +139,8 @@ public:
     void insertPoint(int index, const QPointF &ptParent);
     void removePoint(int index);
 
+    int segmentIndex(QPointF ptItem);
+
     void updateEndpoints(int index = -1);
     void updateNameDesc(int index = -1);
 
@@ -142,12 +150,11 @@ public:
                 { setLine(QLineF(x1, y1, x2, y2)); }
 
 
-
-    bool isTrackingBorder(void);
-    CLineSelection* getSelection(void);
-    bool beginSelection(CDraftView *pView, QPoint ptView);
-    bool endSelection(void);
-    bool trackSelection(QPoint ptView);
+    virtual C2DSelection* getSelection(void) override;
+    virtual bool isTrackingSelection(void) override;
+    virtual bool beginSelection(CDraftView *pView, QMouseEvent* mouseView) override;
+    virtual bool endSelection(void) override;
+    virtual bool trackSelection(QMouseEvent* mouseView) override;
 
 
     virtual void setPen(const QPen &pen) override;
@@ -158,14 +165,17 @@ public:
     bool contains(const QPointF &point) const override;
 #endif
     virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget = Q_NULLPTR) override;
-    virtual void keyPressEvent(QKeyEvent *event) override;
-
-
-    enum{ Type = Type_Line};
-    int type() const override;
 
 protected:
+    virtual void onSelect(bool bSelected) override;
+    virtual void onSceneChange(QGraphicsScene *scene) override;
+
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    virtual void keyPressEvent(QKeyEvent *event) override;
+    virtual void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override;
+    virtual void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    virtual void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override;
+
 
 public:
     CLineSelection *m_pSelection;
@@ -189,38 +199,36 @@ public:
 //.在QGraphicsView中绘制，以保证大小与scene的缩放比例无关
 //.8个handle的拖拽
 //.支持大小不可调整情况
-class CLineSelection
+class CLineSelection : public C2DSelection
 {
 public:
     static Qt::CursorShape handleCursor(CLineItem::LineHandleCode nLHCode);
 
     CLineSelection(CLineItem *owner, CDraftView *view = 0);
+
     QPointF mapSceneToParent(QPointF ptScene);
     QPointF mapParentToScene(QPointF ptParent);
 
-    CLineItem::LineHandleCode posCode(QPoint ptView, int& nIndex);
+    CLineItem::LineHandleCode posCode(QPoint ptView, bool bNewAllowed, int& nIndex);
 
-
-    bool beginTracking(CDraftView *pView, QPoint ptView);
-    void endTracking(void);
-    //bool isInTracking(void);
-    void track(QPoint ptView);
-
-    void draw(QPainter *viewPainter);
-    void drawSelection(QPainter *viewPainter, const QRectF &rectScene);
-
+    virtual bool isInTracking(void) override;
+    virtual bool beginTracking(QMouseEvent* mouseView) override;
+    virtual bool endTracking(void) override;
+    virtual bool track(QMouseEvent* mouseView) override;
+    virtual void draw(QPainter *viewPainter) override;
 
 
 public:
+#if 0
     CLineItem *m_pOwner;
     CDraftView *m_pView;
+#endif
 
     //以下变量用于实现handle框
     //bool m_bTracking;    //true, 如果鼠标已经点压边框的8个handle，进入resize模式
     CLineItem::LineHandleCode m_nLHCode;    //m_bTrackingBorder为真时，点压的handle的BorderHandleCode
     QPointF m_ptPressed;   //点压时的位置, in parent coord
     QPointF m_ptTrackPos;   //点压时鼠标的位置, in parent coord
-    //QRectF m_rcPressed;    //点压时的bounding rect, in parent coord
     int m_nIndex;           //点压时的handle index
 
 };

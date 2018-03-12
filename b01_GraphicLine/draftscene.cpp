@@ -28,6 +28,13 @@ void CDraftScene::resetActionState(void)
     m_nActionState = ActionState_None;
 }
 
+
+void CDraftScene::setActionState(ActionState state)
+{
+    m_nActionState = state;
+}
+
+
 void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
 {
     qDebug()<< "shapeType= "<<m_pMainWindow->GetCurrentShapeType();
@@ -39,14 +46,14 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
         if(m_nActionState == ActionState_None)
         {
             if(m_nCurShapeType != C2DItem::ShapeType_Select)
-            {
+            {                                   //create new item
                 switch(m_nCurShapeType)
                 {
                 case CShapeItem::ShapeType_Line:
                     {
                         qDebug()<<"new Line start";
                         bDone = true;
-                        m_nActionState = ActionState_NewLine;
+                        setActionState(ActionState_NewLine);
                         m_pLineItem = new CLineItem;
                         //m_pLineItem->setLine(QLineF(mouseEvent->scenePos(), mouseEvent->scenePos()));
                         m_pLineItem->appendPoint(mouseEvent->scenePos());
@@ -64,7 +71,7 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
                     {
                         qDebug()<<"add one rectItem.";
                         bDone = true;
-                        m_nActionState = ActionState_NewRect;
+                        setActionState(ActionState_NewRect);
                         CRectItem *rect = new CRectItem;
                         QRectF rc(-50,-50,100,100);
                         rect->setRect(rc);
@@ -97,6 +104,11 @@ void CDraftScene::mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent)
                     break;
                 }
             }               //if(m_nCurShapeType != C2DItem::ShapeType_Select)
+            else
+            {
+                //编辑现有item
+                //在item::mouseXXXEvent()中实现.
+            }
         }
         else if(m_nActionState == ActionState_NewLine)
         {

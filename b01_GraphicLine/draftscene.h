@@ -29,6 +29,7 @@ public:
 
     ActionState actionState(void);
     void resetActionState(void);
+    void setActionState(ActionState state);
 
 signals:
     void itemInserted(QGraphicsItem *item);

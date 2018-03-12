@@ -5,7 +5,9 @@
 #include <QGraphicsObject>
 #include <QLineF>
 
+class QMouseEvent;
 class CDraftView;
+class C2DSelection;
 class CShapeSelection;
 
 template <class T> inline T cgraphicsitem_cast(QGraphicsItem *item)
@@ -52,11 +54,12 @@ public:
 
     enum
     {
+        PathStroke = 10,                //轮廓stroke的宽度
         SelectBorderThickness = 10,     //选中提示边框的厚度， in QGraphicsView coord
+
     };
 
     Q_DECLARE_FLAGS(ItemFlags, ItemFlag)
-
 
 public:
     static QPainterPath CreateLineOutlineFromPath(const QPainterPath &path, const QPen &pen);
@@ -65,6 +68,7 @@ public:
                                         , const QStyleOptionGraphicsItem *option);
 
     C2DItem(QGraphicsItem *parent = Q_NULLPTR);
+    ~C2DItem();
 
     ItemFlags itemFlags() const;
     void setItemFlag(ItemFlag flag, bool enabled = true);
@@ -77,6 +81,14 @@ public:
     void setBrush(const QBrush& brush);
 
     QRect viewBoundingRect(QGraphicsView *view);
+
+
+    virtual C2DSelection* getSelection(void) = 0;
+    virtual bool isTrackingSelection(void) = 0;
+    virtual bool beginSelection(CDraftView *pView,  QMouseEvent* mouseView) = 0;
+    virtual bool endSelection(void) = 0;
+    virtual bool trackSelection( QMouseEvent* mouseView) = 0;
+
 
 
     bool contains(const QPointF &point) const override;
@@ -95,6 +107,8 @@ signals:
 
 protected:
     virtual QVariant itemChange(GraphicsItemChange change, const QVariant &value) override;
+    virtual void onSelect(bool bSelected) = 0;
+    virtual void onSceneChange(QGraphicsScene *scene) = 0;
 
 public:
     quint32 m_nItemFlag;
@@ -123,34 +137,22 @@ public:
         BHC_RightBottom
     };
 
-    enum ShapeItemFlag
-    {
-        NotSelectBorder = 0x01, //选中时不支持显示选中边框(和8个handles)， depend on GraphicsItemFlag::ItemIsSelectable
-        NotSizable = 0x02,      //选中边框不支持显示8个handles，不支持大小调整, depend on SelectBorder
-    };
-
-    Q_DECLARE_FLAGS(ShapeItemFlags, ShapeItemFlag)
-
 
 public:
     CShapeItem(QGraphicsItem *parent = Q_NULLPTR);
-    ~CShapeItem();
+    virtual ~CShapeItem();
 
-    ShapeItemFlags shapeItemFlags() const;
-    void setShapeItemFlag(ShapeItemFlag flag, bool enabled = true);
-    void setShapeItemFlags(ShapeItemFlags flags);
 
     virtual void setPen(const QPen &pen) override;
 
     virtual void setMinimalSize(const QSizeF& sizeMin);
     QSizeF minimalSize(void) const;
 
-
-    bool isTrackingBorder(void);
-    CShapeSelection* getSelection(void);
-    bool beginSelection(CDraftView *pView, QPoint ptView);
-    bool endSelection(void);
-    bool trackSelection(QPoint ptView);
+    virtual C2DSelection* getSelection(void) override;
+    virtual bool isTrackingSelection(void) override;
+    virtual bool beginSelection(CDraftView *pView,  QMouseEvent* mouseView) override;
+    virtual bool endSelection(void) override;
+    virtual bool trackSelection(QMouseEvent* mouseView) override;
 
 
 
@@ -164,6 +166,9 @@ public:
     int type() const override;
 
 protected:
+    virtual void onSelect(bool bSelected) override;
+    virtual void onSceneChange(QGraphicsScene *scene) override;
+
 #if 0
     virtual void hoverEnterEvent(QGraphicsSceneHoverEvent *event) override;
     virtual void hoverMoveEvent(QGraphicsSceneHoverEvent *event) override;
@@ -177,15 +182,6 @@ public:
 
 
     CShapeSelection *m_pSelection;
-#if 0
-    //以下变量用于实现handle框
-    bool m_bTrackingBorder;    //true, 如果鼠标已经点压边框的8个handle，进入resize模式
-    int m_nBorderHandleCode;    //m_bTrackingBorder为真时，点压的handle的BorderHandleCode
-    QPointF m_ptPressed;   //点压时的位置, in scene coord
-    QPointF m_ptTrackPos;   //当前鼠标的位置, in parent coord
-    QRectF m_rcPressed;    //点压时的bounding rect, in item coord
-#endif
-
 };
 
 
