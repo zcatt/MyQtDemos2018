@@ -20,7 +20,8 @@ SUBDIRS += \
     a11_CaptureScreen \
     a12_IniSetting \
     b01_GraphicLine \
-    a0g_PropExt
+    a0g_PropExt \
+    a13_XmlStream
 
 OTHER_FILES += \
     Note.txt \

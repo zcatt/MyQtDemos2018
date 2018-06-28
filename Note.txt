@@ -31,7 +31,7 @@ DemoName                          Note
 .a07_BasicGraphicsShape     一些graphics shapes的tips
 .a08_LineEdit               QLineEdit的使用
 .a09_PopupLineEdit	    QLineEdit作为popup实现in-place edit.
-.a0a_DockWidget             QMainWindow和QDockWidget的演示
+.a0a_DockWidget             QMainWindow和QDockWidget的演示, 包括saveState和saveGeometry
 .a0b_AddPlugin              一个简单的app plugin，演示了如何定义和使用plugin
 .a0c_Simple                 Derived from QtPropertyBrowser/examples/simple
 .a0d_CanvasTyped            Derived from QtPropertyBrowser/examples/Canvas_typed
@@ -41,6 +41,7 @@ DemoName                          Note
 .a10_ModelessDialog         非模态对话框的使用.
 .a11_CaptureScreen,         屏幕截取.
 .a12_IniSetting,            保存到ini.
+.a13_XmlStream,             QXmlStreamReader/Writer的使用
 .b01_GraphicLine,           连接线的实现。follow a07.
 
 

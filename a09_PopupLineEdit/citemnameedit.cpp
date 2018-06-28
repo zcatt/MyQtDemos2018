@@ -1,4 +1,4 @@
-#include <QtWidgets>
+﻿#include <QtWidgets>
 
 #include "citemnameedit.h"
 
@@ -22,14 +22,14 @@ CItemNameEdit::CItemNameEdit(QGraphicsItem *parent)
     pt = view->mapToGlobal(pt);
     move(pt);
 
-    connect(m_lineEdit, &QLineEdit::textChanged, this, textChanged);
+    connect(m_lineEdit, &QLineEdit::textChanged, this, &CItemNameEdit::textChanged);
     connect(m_lineEdit, &QLineEdit::editingFinished, this, &QDialog::accept);
 }
 
 CItemNameEdit::~CItemNameEdit()
 {}
 
-CItemNameEdit::textChanged(const QString &text)
+void CItemNameEdit::textChanged(const QString &text)
 {
     QFontMetrics fm(m_lineEdit->font());
     int h = height();

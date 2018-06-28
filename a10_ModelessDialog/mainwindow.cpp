@@ -1,4 +1,4 @@
-#include <QtWidgets>
+﻿#include <QtWidgets>
 #include "mainwindow.h"
 #include "finddialog.h"
 
@@ -8,8 +8,8 @@ MainWindow::MainWindow(QWidget *parent)
     QPushButton *findButton1 = new QPushButton(tr("Find abc"));
     QPushButton *findButton2 = new QPushButton(tr("Find 123"));
 
-    connect(findButton1, &QPushButton::clicked, this, &showDialog);
-    connect(findButton2, &QPushButton::clicked, this, &showDialog);
+    connect(findButton1, &QPushButton::clicked, this, &MainWindow::showDialog);
+    connect(findButton2, &QPushButton::clicked, this, &MainWindow::showDialog);
 
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addWidget(findButton1);

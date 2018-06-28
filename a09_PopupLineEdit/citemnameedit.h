@@ -1,4 +1,4 @@
-#ifndef CITEMNAMEEDIT_H
+﻿#ifndef CITEMNAMEEDIT_H
 #define CITEMNAMEEDIT_H
 
 #include <QDialog>
@@ -17,7 +17,7 @@ public:
     static QString getName(QGraphicsItem *parent, const QString &text, int nMaxLen = 32);
 
 public slots:
-    textChanged(const QString &text);
+    void textChanged(const QString &text);
 
 public:
     QLineEdit *m_lineEdit;
