@@ -1,10 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE xbel>
 <xbel version="1.0">
-    <folder folded="no">
-        <title>Qt Resources</title>
-    </folder>
-    <folder folded="no">
-        <separator/>
-    </folder>
+<title/>
+<separator/>
+<title> QT resource </title>
+<separator/>
+
+
 </xbel>

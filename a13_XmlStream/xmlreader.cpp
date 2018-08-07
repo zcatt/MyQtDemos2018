@@ -33,6 +33,8 @@ void XmlReader::readXBEL()
     while (xml.readNextStartElement()) {
         if (xml.name() == "folder")
             readFolder();
+        else if (xml.name() == "title")
+            readTitle();
         else if (xml.name() == "bookmark")
             readBookmark();
         else if (xml.name() == "separator")
@@ -46,7 +48,16 @@ void XmlReader::readTitle()
 {
     Q_ASSERT(xml.isStartElement() && xml.name() == "title");
 
-    QString title = xml.readElementText();
+    //QString title = xml.readElementText();
+
+    xml.skipCurrentElement();
+    bool bOK;
+    bOK= xml.readNextStartElement();
+    bOK= xml.readNextStartElement();
+    bOK= xml.readNextStartElement();
+    bOK= xml.readNextStartElement();
+    return;
+
 }
 
 void XmlReader::readSeparator()

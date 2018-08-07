@@ -21,7 +21,9 @@ SUBDIRS += \
     a12_IniSetting \
     b01_GraphicLine \
     a0g_PropExt \
-    a13_XmlStream
+    a13_XmlStream \
+    a14_QGraphicsProxyWidget \
+    a15_RandomNumber
 
 OTHER_FILES += \
     Note.txt \

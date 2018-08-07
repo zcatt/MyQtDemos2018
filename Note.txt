@@ -42,6 +42,8 @@ DemoName                          Note
 .a11_CaptureScreen,         屏幕截取.
 .a12_IniSetting,            保存到ini.
 .a13_XmlStream,             QXmlStreamReader/Writer的使用
+.a14_QGraphicsProxyWidget,  QGraphicsProxyWidget的例子
+.a15_RandomNumber,          随机数产生
 .b01_GraphicLine,           连接线的实现。follow a07.
 
 
