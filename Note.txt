@@ -44,6 +44,7 @@ DemoName                          Note
 .a13_XmlStream,             QXmlStreamReader/Writer的使用
 .a14_QGraphicsProxyWidget,  QGraphicsProxyWidget的例子
 .a15_RandomNumber,          随机数产生
+.a16_additionMultiplicationTable,           加法乘法表练习工具
 .b01_GraphicLine,           连接线的实现。follow a07.
 
 

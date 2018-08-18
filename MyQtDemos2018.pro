@@ -23,7 +23,8 @@ SUBDIRS += \
     a0g_PropExt \
     a13_XmlStream \
     a14_QGraphicsProxyWidget \
-    a15_RandomNumber
+    a15_RandomNumber \
+    a16_additionMultiplicationTable
 
 OTHER_FILES += \
     Note.txt \
