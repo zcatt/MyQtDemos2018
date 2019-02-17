@@ -363,7 +363,11 @@ void CAdditionTableWidget::slotStartNext()
     m_stopWatch->start();
     if(m_cur < m_exCount)
     {
+#if CFG_EnablePreLabel
         m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(m_bUnordered, true));
+#else
+        m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(m_bUnordered, false));
+#endif
         m_curLabel->setText(m_exItems[m_cur].repr(m_bUnordered, false));
         m_nextLabel->setText(m_cur+1 >= m_exCount ? "" : m_exItems[m_cur+1].repr(m_bUnordered, false));
         m_progressingLabel->setText(QString("%1/%2").arg(m_cur+1).arg(m_exCount));
@@ -549,7 +553,11 @@ void CMultiplicationTableWidget::slotStartNext()
     m_stopWatch->start();
     if(m_cur < m_exCount)
     {
+#if CFG_EnablePreLabel
         m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(m_bUnordered, true));
+#else
+        m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(m_bUnordered, false));
+#endif
         m_curLabel->setText(m_exItems[m_cur].repr(m_bUnordered, false));
         m_nextLabel->setText(m_cur+1 >= m_exCount ? "" : m_exItems[m_cur+1].repr(m_bUnordered, false));
         m_progressingLabel->setText(QString("%1/%2").arg(m_cur+1).arg(m_exCount));
@@ -703,7 +711,11 @@ void CAdditionWidget::slotStartNext()
     m_stopWatch->start();
     if(m_cur < m_exCount)
     {
+#if CFG_EnablePreLabel
         m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, true));
+#else
+        m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, false));
+#endif
         m_curLabel->setText(m_exItems[m_cur].repr(true, false));
         m_nextLabel->setText(m_cur+1 >= m_exCount ? "" : m_exItems[m_cur+1].repr(true, false));
         m_progressingLabel->setText(QString("%1/%2").arg(m_cur+1).arg(m_exCount));
@@ -862,7 +874,11 @@ void CSubtractionWidget::slotStartNext()
     m_stopWatch->start();
     if(m_cur < m_exCount)
     {
+#if CFG_EnablePreLabel
         m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, true));
+#else
+        m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, false));
+#endif
         m_curLabel->setText(m_exItems[m_cur].repr(true, false));
         m_nextLabel->setText(m_cur+1 >= m_exCount ? "" : m_exItems[m_cur+1].repr(true, false));
         m_progressingLabel->setText(QString("%1/%2").arg(m_cur+1).arg(m_exCount));
@@ -1018,7 +1034,11 @@ void CMultiplicationWidget::slotStartNext()
     m_stopWatch->start();
     if(m_cur < m_exCount)
     {
+#if CFG_EnablePreLabel
         m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, true));
+#else
+        m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, false));
+#endif
         m_curLabel->setText(m_exItems[m_cur].repr(true, false));
         m_nextLabel->setText(m_cur+1 >= m_exCount ? "" : m_exItems[m_cur+1].repr(true, false));
         m_progressingLabel->setText(QString("%1/%2").arg(m_cur+1).arg(m_exCount));
@@ -1178,7 +1198,11 @@ void CDivisionWidget::slotStartNext()
     m_stopWatch->start();
     if(m_cur < m_exCount)
     {
+#if CFG_EnablePreLabel
         m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, true));
+#else
+        m_preLabel->setText(m_cur-1 < 0 ? "" : m_exItems[m_cur-1].repr(true, false));
+#endif
         m_curLabel->setText(m_exItems[m_cur].repr(true, false));
         m_nextLabel->setText(m_cur+1 >= m_exCount ? "" : m_exItems[m_cur+1].repr(true, false));
         m_progressingLabel->setText(QString("%1/%2").arg(m_cur+1).arg(m_exCount));
@@ -1652,7 +1676,7 @@ CStopWatch::CStopWatch(QWidget *parent) : QLCDNumber(5, parent), m_bStarted(fals
 void CStopWatch::clear(void)
 {
     stop();
-    display("00:00");
+    display("0000");
 }
 
 bool CStopWatch::start(void)
@@ -1685,14 +1709,18 @@ bool CStopWatch::stop(void)
 
 void CStopWatch::slotShowTime()
 {
+    QString text;
     m_ms=m_baseTime.elapsed();
     int sec = m_ms /1000;
+#if 0
     sec = sec % 60;
     int min = m_ms /60000;
     if(min > 99)
         min = min % 99;
-    QString text;
     text = QString("%1:%2").arg(min, 2, 10, QLatin1Char('0')).arg(sec,2,10, QLatin1Char('0'));
+#else
+    text = QString("%1").arg(sec, 4, 10, QLatin1Char('0'));
+#endif
     display(text);
 }
 

@@ -78,7 +78,7 @@ void CRandomTab::genRandom(void)
     qsrand(QTime(0,0,0).secsTo(QTime::currentTime()));
     for(i=0;i<count;i++)
     {
-        numbersList.append(minSpinBox->value() + qrand()%(maxSpinBox->value() - minSpinBox->value()));
+        numbersList.append(minSpinBox->value() + qrand()%(maxSpinBox->value() - minSpinBox->value() +1 ));
         bool flag=true;
         while(flag)
         {
@@ -91,7 +91,7 @@ void CRandomTab::genRandom(void)
             }
             if(j<i)
             {
-                numbersList[i] = minSpinBox->value() + qrand()%(maxSpinBox->value() - minSpinBox->value());
+                numbersList[i] = minSpinBox->value() + qrand()%(maxSpinBox->value() - minSpinBox->value()+1);
             }
             if(j==i)
             {

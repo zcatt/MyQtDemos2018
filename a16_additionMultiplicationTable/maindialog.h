@@ -24,6 +24,8 @@ class CMultiplicationWidget;
 class CDivisionWidget;
 class CConfigWidget;
 
+#define CFG_EnablePreLabel     0
+
 #define VALUE(k,v)  mainwin->m_settings->value(k,v)
 #define SETVALUE(k,v)  mainwin->m_settings->setValue(k,v)
 
