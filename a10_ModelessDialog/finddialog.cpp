@@ -1,10 +1,13 @@
-#include <QtWidgets>
+﻿#include <QtWidgets>
 
 #include "finddialog.h"
 #include "mainwindow.h"
 
-FindDialog::FindDialog(QWidget *parent) : QDialog(parent), m_lineEdit(0)
+FindDialog::FindDialog(QWidget *parent) : QDialog(parent, /*Qt::WindowSystemMenuHint | */Qt::WindowCloseButtonHint)
+                                        , m_lineEdit(0)
 {
+    setSizeGripEnabled(true);
+
     QLabel *label = new QLabel(tr("Find &what:"));
     m_lineEdit = new QLineEdit;
     label->setBuddy(m_lineEdit);
