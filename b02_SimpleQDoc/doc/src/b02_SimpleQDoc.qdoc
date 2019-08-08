@@ -1,0 +1,21 @@
+﻿/****************************************************************************
+**
+** Copyright (C) 2019 zcatt
+**
+** This file is part of the MyQtDemos2018
+**
+****************************************************************************/
+/*! \contentspage{index.html}{b02_SimpleQDoc}
+    \page index.html
+    \nextpage Getting Start
+
+    \title b02_SimpleQDoc Sample
+
+    b02_SimpleQDoc demos how to use qdoc to generate help document.
+    \image girl.jpeg
+
+    \list
+        \li \l{b02_SimpleQDoc Sample}
+        \li \l{Getting Start}
+    \endlist
+*/

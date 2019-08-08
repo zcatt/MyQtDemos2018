@@ -1,0 +1,72 @@
+﻿project = QDoc Project
+description = Sample QDoc project
+
+outputdir = html
+sourcedirs = src
+exampledirs = examples
+imagedirs = images
+
+naturallanguage         = en
+outputencoding          = UTF-8
+sourceencoding          = UTF-8
+
+sources.fileextensions = "*.cpp *.qdoc *.mm *.qml"
+headers.fileextensions = "*.h *.ch *.h++ *.hh *.hpp *.hxx"
+examples.fileextensions = "*.cpp *.h *.js *.xq *.svg *.xml *.ui *.qhp *.qhcp *.qml"
+examples.imageextensions = "*.png *.jpeg *.jpg *.gif *.mng"
+
+
+
+qhp.projects = SimpleQDoc
+qhp.SimpleQDoc.file = SimpleQDoc.qhp
+qhp.SimpleQDoc.namespace = simpleqdoc
+qhp.SimpleQDoc.virtualFolder    = doc
+qhp.SimpleQDoc.indexTitle       = b02_SimpleQDoc Sample
+qhp.SimpleQDoc.filterAttributes = simpleqdoc
+qhp.SimpleQDoc.customFilters.SimpleQDoc.name = SimpleQDoc
+qhp.SimpleQDoc.customFilters.SimpleQDoc.filterAttributes = simpleqdoc
+qhp.SimpleQDoc.indexRoot =
+
+qhp.SimpleQDoc.subprojects = manual
+
+qhp.SimpleQDoc.subprojects.manual.title = SimpleQDoc Manual
+qhp.SimpleQDoc.subprojects.manual.indexTitle = b02_SimpleQDoc Sample
+qhp.SimpleQDoc.subprojects.manual.type = manual
+
+
+
+HTML.stylesheets += config/style/simple.css config/style/offline.css
+
+HTML.headerstyles  = \
+     "  <link rel=\"stylesheet\" type=\"text/css\" href=\"style/offline.css\" />\n" \
+#    "  <link rel=\"stylesheet\" type=\"text/css\" href=\"style/simple.css\" />\n" \
+#    "  <script type=\"text/javascript\">\n" \
+#    "    window.onload = function(){document.getElementsByTagName(\"link\").item(0).setAttribute(\"href\", \"style/offline.css\");};\n" \
+#    "  </script>\n"
+
+
+HTML.postheader = \
+    "<div class=\"header\" id=\"qtdocheader\">\n"\
+    "  <div class=\"main\">\n" \
+    "    <div class=\"main-rounded\">\n" \
+    "      <div class=\"navigationbar\">\n" \
+    "        <table><tr>\n"
+
+HTML.postpostheader = \
+    "        </tr></table>\n"\
+    "      </div>\n" \
+    "    </div>\n" \
+    "<div class=\"content\">\n" \
+    "<div class=\"line\">\n" \
+    "<div class=\"content mainContent\">\n"
+
+HTML.footer = \
+    "</div>\n" \
+    "</div>\n" \
+    "</div>\n" \
+    "</div>\n" \
+    "</div>\n" \
+    "<div class=\"footer\">\n" \
+    "   <acronym title=\"Copyright\">&copy;</acronym> 2019 zcatt\n" \
+    "</div>\n"
+

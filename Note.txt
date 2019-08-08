@@ -30,7 +30,7 @@ DemoName                          Note
 .a06_ExtensionDialog        缩放的dialog, from the 'Extension' example in Qt SDK.
 .a07_BasicGraphicsShape     一些graphics shapes的tips
 .a08_LineEdit               QLineEdit的使用
-.a09_PopupLineEdit	    QLineEdit作为popup实现in-place edit.
+.a09_PopupLineEdit	        QLineEdit作为popup实现in-place edit.
 .a0a_DockWidget             QMainWindow和QDockWidget的演示, 包括saveState和saveGeometry
 .a0b_AddPlugin              一个简单的app plugin，演示了如何定义和使用plugin
 .a0c_Simple                 Derived from QtPropertyBrowser/examples/simple
@@ -46,6 +46,8 @@ DemoName                          Note
 .a15_RandomNumber,          随机数产生
 .a16_additionMultiplicationTable,           加法乘法表练习工具
 .b01_GraphicLine,           连接线的实现。follow a07.
+.b02_SimpleQDoc,            一个简单的qdoc例子。
+
 
 
 
