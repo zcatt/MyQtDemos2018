@@ -47,6 +47,7 @@ DemoName                          Note
 .a16_additionMultiplicationTable,           加法乘法表练习工具
 .b01_GraphicLine,           连接线的实现。follow a07.
 .b02_SimpleQDoc,            一个简单的qdoc例子。
+.b03_UseFreetype,           移植使用freetype 2.10.0
 
 
 

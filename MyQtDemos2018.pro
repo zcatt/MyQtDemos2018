@@ -25,7 +25,8 @@ SUBDIRS += \
     a14_QGraphicsProxyWidget \
     a15_RandomNumber \
     a16_additionMultiplicationTable \
-    b02_SimpleQDoc
+    b02_SimpleQDoc \
+    b03_UseFreetype
 
 OTHER_FILES += \
     Note.txt \

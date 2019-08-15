@@ -39,7 +39,7 @@ CRandomTab::CRandomTab(QWidget *parent) : QWidget(parent)
     maxSpinBox->setMaximum(1000);
 
     countSpinBox->setMinimum(1);
-    countSpinBox->setMaximum(100);
+    countSpinBox->setMaximum(1000);
 
     minSpinBox->setValue(1);
     maxSpinBox->setValue(100);
