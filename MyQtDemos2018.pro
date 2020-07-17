@@ -26,7 +26,8 @@ SUBDIRS += \
     a15_RandomNumber \
     a16_additionMultiplicationTable \
     b02_SimpleQDoc \
-    b03_UseFreetype
+    b03_UseFreetype \
+    c01_localSocket
 
 OTHER_FILES += \
     Note.txt \

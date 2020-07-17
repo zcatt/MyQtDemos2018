@@ -18,6 +18,9 @@
 
 .demos的列表
 -------------------------------------------------------------------------------
+a - 2018
+b - 2019
+c - 2020
 
 DemoName                          Note
 =================================================================
@@ -48,6 +51,8 @@ DemoName                          Note
 .b01_GraphicLine,           连接线的实现。follow a07.
 .b02_SimpleQDoc,            一个简单的qdoc例子。
 .b03_UseFreetype,           移植使用freetype 2.10.0
+.c01_localSocket            QLocalServer and QLocalSocket使用.
+
 
 
 
